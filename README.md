@@ -17,7 +17,7 @@
 
 **A fast, native desktop tracker for Destiny 2 raids, dungeons &amp; Pantheon — with a live in-game overlay.**
 
-[**Download**](https://github.com/x-JKs/Hub/releases/latest) · [Features](#features) · [How it works](#how-it-works) · [Build from source](#build-from-source)
+[**Download**](https://github.com/x-JKs/Hub/releases/latest) · [Features](#features) · [Build from source](#build-from-source)
 
 </div>
 
