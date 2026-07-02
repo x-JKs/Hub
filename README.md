@@ -35,17 +35,6 @@ Hub pulls a Guardian's complete raid, dungeon and Pantheon history straight from
 
 **Hub keeps itself up to date** — it checks for new versions on launch and installs them in the background, so you're always on the latest release.
 
-## Features
-
-- **Accurate lifetime stats** — clears, kills, deaths and time-played per raid/dungeon, summed across *all* characters including deleted ones, so totals match raid.report exactly.
-- **Fastest full clears** — PGCR-verified fresh clears (checkpoint runs excluded), broken down per version.
-- **Achievement tags** — Solo / Duo / Trio, Flawless (whole *fireteam*, not just you), and Day One — all verified from post-game reports.
-- **Post-game reports** — drill into any clear for per-player kills/deaths and weapon usage, with links out to raid.report / dungeon.report.
-- **Pantheon tab** — full Pantheon progress and per-encounter version splits.
-- **Overview** — week/month totals, success rate, most-played raid &amp; dungeon, and a live *current activity* card.
-- **In-game overlay** — a Yute-style, packet-driven activity timer + clear counter that sits on top of the game, with completion notifications.
-- **Auto-refresh** — stats update on their own after you finish an activity; no restart needed.
-
 ## Getting started
 
 On first launch, open **Settings** to:
