@@ -1,0 +1,812 @@
+{
+  "activities": [
+    {
+      "id": 1,
+      "name": "Leviathan",
+      "isRaid": true,
+      "isSunset": true,
+      "path": "leviathan",
+      "splash": "leviathan",
+      "releaseDate": "2017-09-13T17:00:00Z",
+      "contestEnd": null,
+      "weekOneEnd": "2017-09-19T17:00:00Z"
+    },
+    {
+      "id": 2,
+      "name": "Eater of Worlds",
+      "isRaid": true,
+      "isSunset": true,
+      "path": "eaterofworlds",
+      "splash": "eow",
+      "releaseDate": "2017-12-08T18:00:00Z",
+      "contestEnd": null,
+      "weekOneEnd": "2017-12-12T17:00:00Z"
+    },
+    {
+      "id": 3,
+      "name": "Spire of Stars",
+      "isRaid": true,
+      "isSunset": true,
+      "path": "spireofstars",
+      "splash": "spire",
+      "releaseDate": "2018-05-11T17:00:00Z",
+      "contestEnd": null,
+      "weekOneEnd": "2018-05-15T17:00:00Z"
+    },
+    {
+      "id": 4,
+      "name": "Last Wish",
+      "isRaid": true,
+      "isSunset": false,
+      "path": "lastwish",
+      "splash": "wish",
+      "releaseDate": "2018-09-14T17:00:00Z",
+      "contestEnd": null,
+      "weekOneEnd": "2018-09-18T17:00:00Z"
+    },
+    {
+      "id": 5,
+      "name": "Scourge of the Past",
+      "isRaid": true,
+      "isSunset": true,
+      "path": "scourgeofthepast",
+      "splash": "scourge",
+      "releaseDate": "2018-12-07T17:00:00Z",
+      "contestEnd": null,
+      "weekOneEnd": "2018-12-11T17:00:00Z"
+    },
+    {
+      "id": 6,
+      "name": "Crown of Sorrow",
+      "isRaid": true,
+      "isSunset": true,
+      "path": "crownofsorrow",
+      "splash": "crown",
+      "releaseDate": "2019-06-04T23:00:00Z",
+      "contestEnd": "2019-06-05T23:00:00Z",
+      "weekOneEnd": "2019-06-11T17:00:00Z"
+    },
+    {
+      "id": 7,
+      "name": "Garden of Salvation",
+      "isRaid": true,
+      "isSunset": false,
+      "path": "gardenofsalvation",
+      "splash": "gos",
+      "releaseDate": "2019-10-05T17:00:00Z",
+      "contestEnd": "2019-10-06T17:00:00Z",
+      "weekOneEnd": "2019-10-08T17:00:00Z"
+    },
+    {
+      "id": 8,
+      "name": "Deep Stone Crypt",
+      "isRaid": true,
+      "isSunset": false,
+      "path": "deepstonecrypt",
+      "splash": "dsc",
+      "releaseDate": "2020-11-21T18:00:00Z",
+      "contestEnd": "2020-11-22T18:00:00Z",
+      "weekOneEnd": "2020-11-24T17:00:00Z"
+    },
+    {
+      "id": 9,
+      "name": "Vault of Glass",
+      "isRaid": true,
+      "isSunset": false,
+      "path": "vaultofglass",
+      "splash": "vog",
+      "releaseDate": "2021-05-22T17:00:00Z",
+      "contestEnd": "2021-05-23T17:00:00Z",
+      "weekOneEnd": "2021-05-25T17:00:00Z"
+    },
+    {
+      "id": 10,
+      "name": "Vow of the Disciple",
+      "isRaid": true,
+      "isSunset": false,
+      "path": "vowofthedisciple",
+      "splash": "vow",
+      "releaseDate": "2022-03-05T18:00:00Z",
+      "contestEnd": "2022-03-07T18:00:00Z",
+      "weekOneEnd": "2022-03-08T17:00:00Z"
+    },
+    {
+      "id": 11,
+      "name": "King's Fall",
+      "isRaid": true,
+      "isSunset": false,
+      "path": "kingsfall",
+      "splash": "kf",
+      "releaseDate": "2022-08-26T17:00:00Z",
+      "contestEnd": "2022-08-27T17:00:00Z",
+      "weekOneEnd": "2022-08-30T17:00:00Z"
+    },
+    {
+      "id": 12,
+      "name": "Root of Nightmares",
+      "isRaid": true,
+      "isSunset": false,
+      "path": "rootofnightmares",
+      "splash": "ron",
+      "releaseDate": "2023-03-10T17:00:00Z",
+      "contestEnd": "2023-03-12T17:00:00Z",
+      "weekOneEnd": "2023-03-14T17:00:00Z"
+    },
+    {
+      "id": 13,
+      "name": "Crota's End",
+      "isRaid": true,
+      "isSunset": false,
+      "path": "crotasend",
+      "splash": "crota",
+      "releaseDate": "2023-09-01T17:00:00Z",
+      "contestEnd": "2023-09-03T17:00:00Z",
+      "weekOneEnd": "2023-09-05T17:00:00Z"
+    },
+    {
+      "id": 14,
+      "name": "Salvation's Edge",
+      "isRaid": true,
+      "isSunset": false,
+      "path": "salvationsedge",
+      "splash": "edge",
+      "releaseDate": "2024-06-07T17:00:00Z",
+      "contestEnd": "2024-06-09T17:00:00Z",
+      "weekOneEnd": "2024-06-11T17:00:00Z"
+    },
+    {
+      "id": 15,
+      "name": "The Desert Perpetual",
+      "isRaid": true,
+      "isSunset": false,
+      "path": "desertperpetual",
+      "splash": "dp",
+      "releaseDate": "2025-07-19T17:00:00Z",
+      "contestEnd": "2025-07-21T17:00:00Z",
+      "weekOneEnd": "2025-07-22T17:00:00Z"
+    },
+    {
+      "id": 16,
+      "name": "The Desert Perpetual (Epic)",
+      "isRaid": false,
+      "isSunset": false,
+      "path": "desertperpetualepic",
+      "splash": "edp",
+      "releaseDate": "2025-09-27T17:00:00Z",
+      "contestEnd": "2025-09-29T17:00:00Z",
+      "weekOneEnd": "2025-09-30T17:00:00Z"
+    },
+    {
+      "id": 101,
+      "name": "Pantheon: Into the Light",
+      "isRaid": false,
+      "isSunset": true,
+      "path": "pantheon",
+      "splash": "pantheon",
+      "releaseDate": "2024-04-30T17:00:00Z",
+      "contestEnd": null,
+      "weekOneEnd": null
+    },
+    {
+      "id": 102,
+      "name": "Pantheon: Monument of Triumph",
+      "isRaid": false,
+      "isSunset": false,
+      "path": "pantheon",
+      "splash": "pantheon2",
+      "releaseDate": "2026-06-09T17:00:00Z",
+      "contestEnd": null,
+      "weekOneEnd": null
+    }
+  ],
+  "versions": [
+    {
+      "id": 1,
+      "name": "Standard",
+      "path": "normal",
+      "associatedActivityId": null,
+      "isChallengeMode": false
+    },
+    {
+      "id": 2,
+      "name": "Guided Games",
+      "path": "guided",
+      "associatedActivityId": null,
+      "isChallengeMode": false
+    },
+    {
+      "id": 3,
+      "name": "Prestige",
+      "path": "prestige",
+      "associatedActivityId": null,
+      "isChallengeMode": false
+    },
+    {
+      "id": 4,
+      "name": "Master",
+      "path": "master",
+      "associatedActivityId": null,
+      "isChallengeMode": false
+    },
+    {
+      "id": 32,
+      "name": "Contest",
+      "path": "contest",
+      "associatedActivityId": null,
+      "isChallengeMode": false
+    },
+    {
+      "id": 64,
+      "name": "Tempo's Edge",
+      "path": "challenge",
+      "associatedActivityId": 9,
+      "isChallengeMode": true
+    },
+    {
+      "id": 65,
+      "name": "Regicide",
+      "path": "challenge",
+      "associatedActivityId": 11,
+      "isChallengeMode": true
+    },
+    {
+      "id": 66,
+      "name": "Superior Swordplay",
+      "path": "challenge",
+      "associatedActivityId": 13,
+      "isChallengeMode": true
+    },
+    {
+      "id": 128,
+      "name": "Atraks Sovereign",
+      "path": "atraks",
+      "associatedActivityId": 101,
+      "isChallengeMode": false
+    },
+    {
+      "id": 129,
+      "name": "Oryx Exalted",
+      "path": "oryx",
+      "associatedActivityId": 101,
+      "isChallengeMode": false
+    },
+    {
+      "id": 130,
+      "name": "Rhulk Indomitable",
+      "path": "rhulk",
+      "associatedActivityId": 101,
+      "isChallengeMode": false
+    },
+    {
+      "id": 131,
+      "name": "Nezarec Sublime",
+      "path": "nezarec",
+      "associatedActivityId": 101,
+      "isChallengeMode": false
+    },
+    {
+      "id": 132,
+      "name": "Calus Resplendent",
+      "path": "calus-resplendent",
+      "associatedActivityId": 102,
+      "isChallengeMode": false
+    },
+    {
+      "id": 133,
+      "name": "Morgeth Surpassing",
+      "path": "morgeth-surpassing",
+      "associatedActivityId": 102,
+      "isChallengeMode": false
+    },
+    {
+      "id": 134,
+      "name": "Insurrection Prime Revolutionary",
+      "path": "insurrection-revolutionary",
+      "associatedActivityId": 102,
+      "isChallengeMode": false
+    },
+    {
+      "id": 135,
+      "name": "Argos",
+      "path": "argos",
+      "associatedActivityId": 102,
+      "isChallengeMode": false
+    },
+    {
+      "id": 136,
+      "name": "Gahlran",
+      "path": "gahlran",
+      "associatedActivityId": 102,
+      "isChallengeMode": false
+    },
+    {
+      "id": 137,
+      "name": "Calus",
+      "path": "calus",
+      "associatedActivityId": 102,
+      "isChallengeMode": false
+    },
+    {
+      "id": 138,
+      "name": "Warpriest",
+      "path": "warpriest",
+      "associatedActivityId": 102,
+      "isChallengeMode": false
+    },
+    {
+      "id": 139,
+      "name": "Consecrated Mind",
+      "path": "consecrated-mind",
+      "associatedActivityId": 102,
+      "isChallengeMode": false
+    },
+    {
+      "id": 140,
+      "name": "Morgeth",
+      "path": "morgeth",
+      "associatedActivityId": 102,
+      "isChallengeMode": false
+    },
+    {
+      "id": 141,
+      "name": "Insurrection Prime",
+      "path": "insurrection",
+      "associatedActivityId": 102,
+      "isChallengeMode": false
+    },
+    {
+      "id": 256,
+      "name": "Epic",
+      "path": "epic",
+      "associatedActivityId": null,
+      "isChallengeMode": false
+    }
+  ],
+  "hashes": [
+    {
+      "hash": 2693136600,
+      "activityId": 1,
+      "versionId": 1
+    },
+    {
+      "hash": 2693136601,
+      "activityId": 1,
+      "versionId": 1
+    },
+    {
+      "hash": 2693136602,
+      "activityId": 1,
+      "versionId": 1
+    },
+    {
+      "hash": 2693136603,
+      "activityId": 1,
+      "versionId": 1
+    },
+    {
+      "hash": 2693136604,
+      "activityId": 1,
+      "versionId": 1
+    },
+    {
+      "hash": 2693136605,
+      "activityId": 1,
+      "versionId": 1
+    },
+    {
+      "hash": 89727599,
+      "activityId": 1,
+      "versionId": 2
+    },
+    {
+      "hash": 287649202,
+      "activityId": 1,
+      "versionId": 2
+    },
+    {
+      "hash": 1699948563,
+      "activityId": 1,
+      "versionId": 2
+    },
+    {
+      "hash": 1875726950,
+      "activityId": 1,
+      "versionId": 2
+    },
+    {
+      "hash": 3916343513,
+      "activityId": 1,
+      "versionId": 2
+    },
+    {
+      "hash": 4039317196,
+      "activityId": 1,
+      "versionId": 2
+    },
+    {
+      "hash": 417231112,
+      "activityId": 1,
+      "versionId": 3
+    },
+    {
+      "hash": 508802457,
+      "activityId": 1,
+      "versionId": 3
+    },
+    {
+      "hash": 757116822,
+      "activityId": 1,
+      "versionId": 3
+    },
+    {
+      "hash": 771164842,
+      "activityId": 1,
+      "versionId": 3
+    },
+    {
+      "hash": 1685065161,
+      "activityId": 1,
+      "versionId": 3
+    },
+    {
+      "hash": 1800508819,
+      "activityId": 1,
+      "versionId": 3
+    },
+    {
+      "hash": 2449714930,
+      "activityId": 1,
+      "versionId": 3
+    },
+    {
+      "hash": 3446541099,
+      "activityId": 1,
+      "versionId": 3
+    },
+    {
+      "hash": 4206123728,
+      "activityId": 1,
+      "versionId": 3
+    },
+    {
+      "hash": 3912437239,
+      "activityId": 1,
+      "versionId": 3
+    },
+    {
+      "hash": 3879860661,
+      "activityId": 1,
+      "versionId": 3
+    },
+    {
+      "hash": 3857338478,
+      "activityId": 1,
+      "versionId": 3
+    },
+    {
+      "hash": 3089205900,
+      "activityId": 2,
+      "versionId": 1
+    },
+    {
+      "hash": 2164432138,
+      "activityId": 2,
+      "versionId": 2
+    },
+    {
+      "hash": 809170886,
+      "activityId": 2,
+      "versionId": 3
+    },
+    {
+      "hash": 119944200,
+      "activityId": 3,
+      "versionId": 1
+    },
+    {
+      "hash": 3004605630,
+      "activityId": 3,
+      "versionId": 2
+    },
+    {
+      "hash": 3213556450,
+      "activityId": 3,
+      "versionId": 3
+    },
+    {
+      "hash": 2122313384,
+      "activityId": 4,
+      "versionId": 1
+    },
+    {
+      "hash": 2214608157,
+      "activityId": 4,
+      "versionId": 1
+    },
+    {
+      "hash": 1661734046,
+      "activityId": 4,
+      "versionId": 2
+    },
+    {
+      "hash": 548750096,
+      "activityId": 5,
+      "versionId": 1
+    },
+    {
+      "hash": 2812525063,
+      "activityId": 5,
+      "versionId": 2
+    },
+    {
+      "hash": 3333172150,
+      "activityId": 6,
+      "versionId": 1
+    },
+    {
+      "hash": 960175301,
+      "activityId": 6,
+      "versionId": 2
+    },
+    {
+      "hash": 2659723068,
+      "activityId": 7,
+      "versionId": 1
+    },
+    {
+      "hash": 3458480158,
+      "activityId": 7,
+      "versionId": 1
+    },
+    {
+      "hash": 1042180643,
+      "activityId": 7,
+      "versionId": 1
+    },
+    {
+      "hash": 2497200493,
+      "activityId": 7,
+      "versionId": 2
+    },
+    {
+      "hash": 3845997235,
+      "activityId": 7,
+      "versionId": 2
+    },
+    {
+      "hash": 3823237780,
+      "activityId": 7,
+      "versionId": 2
+    },
+    {
+      "hash": 910380154,
+      "activityId": 8,
+      "versionId": 1
+    },
+    {
+      "hash": 3976949817,
+      "activityId": 8,
+      "versionId": 2
+    },
+    {
+      "hash": 3881495763,
+      "activityId": 9,
+      "versionId": 1
+    },
+    {
+      "hash": 3711931140,
+      "activityId": 9,
+      "versionId": 2
+    },
+    {
+      "hash": 1485585878,
+      "activityId": 9,
+      "versionId": 64
+    },
+    {
+      "hash": 1681562271,
+      "activityId": 9,
+      "versionId": 4
+    },
+    {
+      "hash": 3022541210,
+      "activityId": 9,
+      "versionId": 4
+    },
+    {
+      "hash": 1441982566,
+      "activityId": 10,
+      "versionId": 1
+    },
+    {
+      "hash": 2906950631,
+      "activityId": 10,
+      "versionId": 1
+    },
+    {
+      "hash": 4156879541,
+      "activityId": 10,
+      "versionId": 2
+    },
+    {
+      "hash": 4217492330,
+      "activityId": 10,
+      "versionId": 4
+    },
+    {
+      "hash": 3889634515,
+      "activityId": 10,
+      "versionId": 4
+    },
+    {
+      "hash": 1374392663,
+      "activityId": 11,
+      "versionId": 1
+    },
+    {
+      "hash": 2897223272,
+      "activityId": 11,
+      "versionId": 2
+    },
+    {
+      "hash": 1063970578,
+      "activityId": 11,
+      "versionId": 65
+    },
+    {
+      "hash": 2964135793,
+      "activityId": 11,
+      "versionId": 4
+    },
+    {
+      "hash": 3257594522,
+      "activityId": 11,
+      "versionId": 4
+    },
+    {
+      "hash": 2381413764,
+      "activityId": 12,
+      "versionId": 1
+    },
+    {
+      "hash": 1191701339,
+      "activityId": 12,
+      "versionId": 2
+    },
+    {
+      "hash": 2918919505,
+      "activityId": 12,
+      "versionId": 4
+    },
+    {
+      "hash": 4179289725,
+      "activityId": 13,
+      "versionId": 1
+    },
+    {
+      "hash": 107319834,
+      "activityId": 13,
+      "versionId": 1
+    },
+    {
+      "hash": 4103176774,
+      "activityId": 13,
+      "versionId": 2
+    },
+    {
+      "hash": 156253568,
+      "activityId": 13,
+      "versionId": 66
+    },
+    {
+      "hash": 1507509200,
+      "activityId": 13,
+      "versionId": 4
+    },
+    {
+      "hash": 4169648179,
+      "activityId": 101,
+      "versionId": 128
+    },
+    {
+      "hash": 4169648176,
+      "activityId": 101,
+      "versionId": 129
+    },
+    {
+      "hash": 4169648177,
+      "activityId": 101,
+      "versionId": 130
+    },
+    {
+      "hash": 4169648182,
+      "activityId": 101,
+      "versionId": 131
+    },
+    {
+      "hash": 1516551982,
+      "activityId": 102,
+      "versionId": 132
+    },
+    {
+      "hash": 2530656885,
+      "activityId": 102,
+      "versionId": 133
+    },
+    {
+      "hash": 747671496,
+      "activityId": 102,
+      "versionId": 134
+    },
+    {
+      "hash": 796488315,
+      "activityId": 102,
+      "versionId": 135
+    },
+    {
+      "hash": 1953549041,
+      "activityId": 102,
+      "versionId": 136
+    },
+    {
+      "hash": 1566552947,
+      "activityId": 102,
+      "versionId": 137
+    },
+    {
+      "hash": 145874766,
+      "activityId": 102,
+      "versionId": 138
+    },
+    {
+      "hash": 3975235718,
+      "activityId": 102,
+      "versionId": 139
+    },
+    {
+      "hash": 43862588,
+      "activityId": 102,
+      "versionId": 140
+    },
+    {
+      "hash": 206811036,
+      "activityId": 102,
+      "versionId": 141
+    },
+    {
+      "hash": 1541433876,
+      "activityId": 14,
+      "versionId": 1
+    },
+    {
+      "hash": 2192826039,
+      "activityId": 14,
+      "versionId": 32
+    },
+    {
+      "hash": 4129614942,
+      "activityId": 14,
+      "versionId": 4
+    },
+    {
+      "hash": 1044919065,
+      "activityId": 15,
+      "versionId": 1
+    },
+    {
+      "hash": 3896382790,
+      "activityId": 15,
+      "versionId": 32
+    },
+    {
+      "hash": 3817322389,
+      "activityId": 15,
+      "versionId": 256
+    },
+    {
+      "hash": 2586252122,
+      "activityId": 15,
+      "versionId": 256
+    }
+  ]
+}

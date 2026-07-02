@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+release/
+
+# Local environment & secrets
+.env
+*.local
+release.bat
+
+# Logs, caches & build artifacts
+*.log
+tsconfig.tsbuildinfo
+.electron-cache*/
+
+# Editor / OS / tooling
+.DS_Store
+.vscode/
+.idea/
+.claude/
+
+# Reference material & scratch data (not part of the app)
+DIM-*/
+threepole-main/
+threepole-main.zip
+apifix/
+
+# Banner working art — only docs/banner.png (the finished one) is committed
+build/banner.png
+build/banner-clean.png
+build/og.png
+build/_*.png

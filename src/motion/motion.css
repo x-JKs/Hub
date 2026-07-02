@@ -1,0 +1,434 @@
+/* ==========================================================================
+   Motion Tokens (CSS Custom Properties)
+   ========================================================================== */
+
+:root {
+    --m-spring-snappy: cubic-bezier(0.175, 0.885, 0.32, 1.1);
+    --m-spring-standard: cubic-bezier(0.16, 1, 0.3, 1);
+    --m-spring-gentle: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --m-spring-expressive: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* ==========================================================================
+   Custom Title Bar
+   ========================================================================== */
+
+.titlebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 9999;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    background: transparent;
+    user-select: none;
+    transition: opacity 280ms var(--m-spring-standard);
+}
+
+.titlebar--blurred .titlebar-btn {
+    opacity: 0.4;
+}
+
+.titlebar-logo {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    height: 100%;
+    opacity: 0.92;
+    pointer-events: none;
+}
+
+.titlebar--blurred .titlebar-logo {
+    opacity: 0.45;
+}
+
+.titlebar-drag {
+    position: absolute;
+    inset: 0;
+    -webkit-app-region: drag;
+    app-region: drag;
+}
+
+.titlebar-spacer {
+    flex: 1;
+}
+
+.titlebar-controls {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    height: 100%;
+    -webkit-app-region: no-drag;
+    app-region: no-drag;
+}
+
+.titlebar-btn {
+    width: 44px;
+    height: 100%;
+    border: none;
+    background: transparent;
+    color: var(--text-3);
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    transition: background 150ms ease, color 150ms ease;
+    outline: none;
+}
+
+.titlebar-btn:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-1);
+}
+
+.titlebar-btn:active {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.titlebar-btn--close:hover {
+    background: #e81123;
+    color: #fff;
+}
+
+.titlebar-btn--close:active {
+    background: #bf0f1d;
+    color: #fff;
+}
+
+body {
+    padding-top: 32px;
+}
+
+/* ==========================================================================
+   Overlay Entrance / Exit
+   Backdrop fades + blurs in, panel slides up from below with scale.
+   Clearly visible — 450ms entrance, 250ms exit.
+   ========================================================================== */
+
+.mo-overlay {
+    animation: mo-backdrop-in 450ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes mo-backdrop-in {
+    from {
+        opacity: 0;
+        backdrop-filter: blur(0px);
+    }
+    to {
+        opacity: 1;
+        backdrop-filter: blur(6px);
+    }
+}
+
+.mo-overlay .pgcr-overlay-inner {
+    animation: mo-panel-in 500ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation-delay: 80ms;
+}
+
+@keyframes mo-panel-in {
+    from {
+        opacity: 0;
+        transform: translateY(40px) scale(0.92);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Exit — JS adds .mo-overlay--exit, waits 250ms, then unmounts */
+.mo-overlay--exit {
+    animation: mo-backdrop-out 250ms ease forwards;
+}
+
+.mo-overlay--exit .pgcr-overlay-inner {
+    animation: mo-panel-out 220ms ease forwards;
+}
+
+@keyframes mo-backdrop-out {
+    to { opacity: 0; }
+}
+
+@keyframes mo-panel-out {
+    to {
+        opacity: 0;
+        transform: translateY(20px) scale(0.96);
+    }
+}
+
+/* ==========================================================================
+   Tab Content Crossfade
+   ========================================================================== */
+
+.mo-tab--out {
+    opacity: 0;
+    transition: opacity 120ms ease;
+}
+
+.mo-tab--in {
+    opacity: 0;
+}
+
+.mo-tab--visible {
+    opacity: 1;
+    transition: opacity 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ==========================================================================
+   Tab Button Transition
+   ========================================================================== */
+
+.tabs button {
+    transition: color 280ms ease, border-bottom-color 280ms ease;
+}
+
+/* ==========================================================================
+   Stat Bar
+   ========================================================================== */
+
+/* ==========================================================================
+   Badge/Tag pop-in
+   ========================================================================== */
+
+.tag {
+    animation: mo-badge-in 350ms cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+}
+
+@keyframes mo-badge-in {
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* ==========================================================================
+   Activity Detail Card Stagger Entrance
+   Cards fade + slide up one by one when the list appears.
+   ========================================================================== */
+
+.activity-detail-wrap {
+    animation: mo-card-enter 500ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.activity-detail-wrap:nth-child(1) { animation-delay: 0ms; }
+.activity-detail-wrap:nth-child(2) { animation-delay: 60ms; }
+.activity-detail-wrap:nth-child(3) { animation-delay: 120ms; }
+.activity-detail-wrap:nth-child(4) { animation-delay: 180ms; }
+.activity-detail-wrap:nth-child(5) { animation-delay: 240ms; }
+.activity-detail-wrap:nth-child(6) { animation-delay: 300ms; }
+.activity-detail-wrap:nth-child(7) { animation-delay: 360ms; }
+.activity-detail-wrap:nth-child(8) { animation-delay: 420ms; }
+.activity-detail-wrap:nth-child(9) { animation-delay: 480ms; }
+.activity-detail-wrap:nth-child(10) { animation-delay: 540ms; }
+.activity-detail-wrap:nth-child(n+11) { animation-delay: 600ms; }
+
+@keyframes mo-card-enter {
+    from {
+        opacity: 0;
+        transform: translateY(16px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ==========================================================================
+   Clickable detail card press feedback
+   ========================================================================== */
+
+.detail-clickable {
+    transition: transform 180ms cubic-bezier(0.175, 0.885, 0.32, 1.1);
+    cursor: pointer;
+}
+
+.detail-clickable:hover {
+    transform: translateY(-1px);
+}
+
+.detail-clickable:active {
+    transform: scale(0.98);
+}
+
+/* ==========================================================================
+   PGCR Clear Row Stagger
+   ========================================================================== */
+
+.pgcr-clear-row {
+    animation: mo-row-in 400ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.pgcr-clear-row:nth-child(1)  { animation-delay: 0ms; }
+.pgcr-clear-row:nth-child(2)  { animation-delay: 40ms; }
+.pgcr-clear-row:nth-child(3)  { animation-delay: 80ms; }
+.pgcr-clear-row:nth-child(4)  { animation-delay: 120ms; }
+.pgcr-clear-row:nth-child(5)  { animation-delay: 160ms; }
+.pgcr-clear-row:nth-child(6)  { animation-delay: 200ms; }
+.pgcr-clear-row:nth-child(7)  { animation-delay: 240ms; }
+.pgcr-clear-row:nth-child(8)  { animation-delay: 280ms; }
+.pgcr-clear-row:nth-child(9)  { animation-delay: 320ms; }
+.pgcr-clear-row:nth-child(10) { animation-delay: 360ms; }
+.pgcr-clear-row:nth-child(n+11) { animation-delay: 400ms; }
+
+@keyframes mo-row-in {
+    from {
+        opacity: 0;
+        transform: translateX(-12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* PGCR Player Row Stagger */
+.pgcr-player-row {
+    animation: mo-row-in 400ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.pgcr-player-row:nth-child(1)  { animation-delay: 0ms; }
+.pgcr-player-row:nth-child(2)  { animation-delay: 50ms; }
+.pgcr-player-row:nth-child(3)  { animation-delay: 100ms; }
+.pgcr-player-row:nth-child(4)  { animation-delay: 150ms; }
+.pgcr-player-row:nth-child(5)  { animation-delay: 200ms; }
+.pgcr-player-row:nth-child(6)  { animation-delay: 250ms; }
+.pgcr-player-row:nth-child(n+7) { animation-delay: 300ms; }
+
+/* PGCR Weapon List Stagger */
+.pgcr-weapon {
+    animation: mo-row-in 400ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.pgcr-weapon:nth-child(1)  { animation-delay: 0ms; }
+.pgcr-weapon:nth-child(2)  { animation-delay: 50ms; }
+.pgcr-weapon:nth-child(3)  { animation-delay: 80ms; }
+.pgcr-weapon:nth-child(4)  { animation-delay: 120ms; }
+.pgcr-weapon:nth-child(5)  { animation-delay: 160ms; }
+.pgcr-weapon:nth-child(6)  { animation-delay: 200ms; }
+.pgcr-weapon:nth-child(7)  { animation-delay: 240ms; }
+.pgcr-weapon:nth-child(n+8) { animation-delay: 280ms; }
+
+/* Loadout items stagger */
+.loadout-item,
+.loadout-subclass {
+    animation: mo-row-in 400ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.loadout-item:nth-child(1),
+.loadout-subclass:nth-child(1) { animation-delay: 0ms; }
+.loadout-item:nth-child(2) { animation-delay: 50ms; }
+.loadout-item:nth-child(3) { animation-delay: 100ms; }
+.loadout-item:nth-child(4) { animation-delay: 150ms; }
+.loadout-item:nth-child(5) { animation-delay: 200ms; }
+.loadout-item:nth-child(6) { animation-delay: 250ms; }
+.loadout-item:nth-child(7) { animation-delay: 300ms; }
+.loadout-item:nth-child(8) { animation-delay: 350ms; }
+.loadout-item:nth-child(9) { animation-delay: 400ms; }
+.loadout-item:nth-child(n+10) { animation-delay: 450ms; }
+
+/* ==========================================================================
+   Live Activity card + fireteam transitions
+   ========================================================================== */
+
+.live-card {
+    transition: transform 200ms cubic-bezier(0.175, 0.885, 0.32, 1.1),
+                box-shadow 200ms ease;
+}
+
+.live-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+.live-card:active {
+    transform: scale(0.985);
+}
+
+.live-ft-member {
+    transition: transform 180ms ease, background 180ms ease;
+}
+
+.live-ft-member:hover {
+    transform: translateX(4px);
+}
+
+.live-ft-member:active {
+    transform: scale(0.98);
+}
+
+.live-char-chip {
+    transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
+}
+
+.live-char-chip:hover {
+    transform: translateY(-1px);
+}
+
+.live-char-chip:active {
+    transform: scale(0.97);
+}
+
+/* ==========================================================================
+   Generic clickable row hover (PGCR player rows, clear rows)
+   ========================================================================== */
+
+.pgcr-clear-row {
+    transition: background 180ms ease, transform 180ms ease;
+}
+
+.pgcr-clear-row:hover {
+    background: rgba(255, 255, 255, 0.03);
+    transform: translateX(2px);
+}
+
+.pgcr-player-row {
+    transition: background 180ms ease, transform 180ms ease;
+}
+
+.pgcr-player-row:hover {
+    background: rgba(255, 255, 255, 0.03);
+    transform: translateX(2px);
+}
+
+/* ==========================================================================
+   Page summary stat entrance
+   ========================================================================== */
+
+/* Page summary — now uses stat-bar, animated via useFadeIn */
+
+/* ==========================================================================
+   Shimmer Skeleton
+   ========================================================================== */
+
+.mo-shimmer-wrap {
+    position: relative;
+    overflow: hidden;
+}
+
+.mo-shimmer-wrap::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.03) 40%,
+        rgba(255, 255, 255, 0.06) 50%,
+        rgba(255, 255, 255, 0.03) 60%,
+        transparent 100%
+    );
+    transform: translateX(-100%);
+    animation: mo-shimmer 1.8s ease-in-out infinite;
+}
+
+@keyframes mo-shimmer {
+    100% { transform: translateX(100%); }
+}
