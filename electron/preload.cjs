@@ -37,4 +37,10 @@ contextBridge.exposeInMainWorld("electronWindow", {
         ipcRenderer.on("overlay:settings", handler)
         return () => ipcRenderer.removeListener("overlay:settings", handler)
     },
+    onUpdateStatus: (cb) => {
+        const handler = (_e, s) => cb(s)
+        ipcRenderer.on("update:status", handler)
+        return () => ipcRenderer.removeListener("update:status", handler)
+    },
+    installUpdate: () => ipcRenderer.send("update:install"),
 })

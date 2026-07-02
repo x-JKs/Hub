@@ -24,15 +24,42 @@ function initAutoUpdate() {
     if (!autoUpdater || !app.isPackaged) return
     autoUpdater.autoDownload = true
     autoUpdater.autoInstallOnAppQuit = true
-    autoUpdater.on("error", e => console.warn("[updater] error:", e?.message ?? e))
-    autoUpdater.on("update-available", i => console.log("[updater] update available:", i?.version))
-    autoUpdater.on("update-downloaded", i =>
-        console.log("[updater] downloaded", i?.version, "— installs on quit")
+
+    // Push update state to every window so the renderer can show an in-app prompt.
+    const notify = payload => {
+        for (const w of BrowserWindow.getAllWindows()) {
+            try { w.webContents.send("update:status", payload) } catch {}
+        }
+    }
+
+    autoUpdater.on("update-available", i => {
+        console.log("[updater] update available:", i?.version)
+        notify({ state: "available", version: i?.version })
+    })
+    autoUpdater.on("download-progress", p =>
+        notify({ state: "progress", percent: Math.round(p?.percent ?? 0) })
     )
-    // Downloads a newer release in the background and installs it on next quit.
-    autoUpdater.checkForUpdatesAndNotify().catch(e =>
+    autoUpdater.on("update-downloaded", i => {
+        console.log("[updater] downloaded", i?.version, "— ready to install")
+        notify({ state: "ready", version: i?.version })
+    })
+    autoUpdater.on("error", e => {
+        console.warn("[updater] error:", e?.message ?? e)
+        notify({ state: "error" })
+    })
+
+    // Renderer asks to install now → quit and relaunch into the new version.
+    ipcMain.on("update:install", () => {
+        try { autoUpdater.quitAndInstall() }
+        catch (e) { console.warn("[updater] install failed:", e?.message ?? e) }
+    })
+
+    // Check on launch and every 30 min while running.
+    const check = () => autoUpdater.checkForUpdates().catch(e =>
         console.warn("[updater] check failed:", e?.message ?? e)
     )
+    check()
+    setInterval(check, 30 * 60 * 1000)
 }
 
 const OAUTH_PORT = 8420

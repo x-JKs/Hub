@@ -59,6 +59,37 @@
 }
 
 /* ==========================================================================
+   Auto-update banner
+   ========================================================================== */
+
+.update-banner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--sp-3);
+    padding: var(--sp-2) var(--sp-4);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-1);
+    background: var(--ac-dim);
+    border-bottom: 1px solid var(--ac-glow);
+}
+
+.update-btn {
+    padding: var(--sp-1) var(--sp-3);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--bg-0);
+    background: var(--ac);
+    border: none;
+    border-radius: var(--r-sm);
+    cursor: pointer;
+    transition: filter var(--dur) var(--ease-out);
+}
+
+.update-btn:hover { filter: brightness(1.1); }
+
+/* ==========================================================================
    Reset & Base
    ========================================================================== */
 
