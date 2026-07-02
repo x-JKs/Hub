@@ -69,21 +69,13 @@ npm run dist   # NSIS installer    -> release/Hub Setup <version>.exe   (run fro
 
 Released builds bake in the maintainer's Bungie key at build time; when building from source you supply your **own** key in `.env` (the file is git-ignored and never committed).
 
-## Tech stack
+## Stack
 
 - **Electron** + **Vite** + **React** + **TypeScript**
-- **koffi** + **WinDivert** — read-only UDP `3074` sniffing for the overlay timer
-- **electron-builder** (NSIS installer) + **electron-updater** (background auto-update)
-
-## How it works
-
-- **Lifetime totals** come from Bungie's `GetDestinyAggregateActivityStats`, summed across every character — current *and* deleted (discovered via account-level historical stats). Summing deleted characters is what makes the numbers match raid.report exactly.
-- **Fastest / flawless / lowman** are verified against **PGCRs** (`activityWasStartedFromBeginning` for freshness; the full entry list for whole-fireteam flawless), cached locally so it's only slow the first time.
-- **The overlay timer** sniffs the game's UDP `3074` traffic to detect the instant you load into an activity, then hands off to Bungie's `dateActivityStarted` once the API catches up — the same approach as Yute.
 
 ## Acknowledgements
 
-Inspired by [raid.report](https://raid.report) / [dungeon.report](https://dungeon.report) and the Yute / threepole in-game overlays. Built on the [Bungie.net API](https://bungie-net.github.io/).
+Inspired by [raid.report](https://raid.report) / [dungeon.report](https://dungeon.report) / threepole in-game overlays. Built on the [Bungie.net API](https://bungie-net.github.io/).
 
 ## Disclaimer &amp; license
 
