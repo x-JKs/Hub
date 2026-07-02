@@ -1,7 +1,7 @@
 {
   "name": "hub",
   "private": true,
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "Destiny 2 activity tracker & finder with a live in-game overlay",
   "author": "x-JKs",
   "type": "module",
