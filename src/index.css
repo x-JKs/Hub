@@ -59,25 +59,57 @@
 }
 
 /* ==========================================================================
-   Auto-update banner
+   Auto-update modal (blurs the app on launch when an update is available)
    ========================================================================== */
 
-.update-banner {
+.update-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: var(--sp-3);
-    padding: var(--sp-2) var(--sp-4);
-    font-size: 13px;
-    font-weight: 500;
+    background: color-mix(in srgb, var(--bg-0) 55%, transparent);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    animation: update-fade var(--dur) var(--ease-out);
+}
+
+@keyframes update-fade { from { opacity: 0; } to { opacity: 1; } }
+
+.update-modal {
+    width: min(420px, 90vw);
+    padding: var(--sp-6);
+    text-align: center;
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55);
+}
+
+.update-modal-title {
+    margin: 0 0 var(--sp-2);
+    font-family: var(--font-display);
+    font-size: 19px;
     color: var(--text-1);
-    background: var(--ac-dim);
-    border-bottom: 1px solid var(--ac-glow);
+}
+
+.update-modal-text {
+    margin: 0 0 var(--sp-5);
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--text-2);
+}
+
+.update-modal-actions {
+    display: flex;
+    gap: var(--sp-3);
+    justify-content: center;
 }
 
 .update-btn {
-    padding: var(--sp-1) var(--sp-3);
-    font-size: 12px;
+    padding: var(--sp-2) var(--sp-5);
+    font-size: 13px;
     font-weight: 600;
     color: var(--bg-0);
     background: var(--ac);
@@ -89,18 +121,32 @@
 
 .update-btn:hover { filter: brightness(1.1); }
 
-.update-dismiss {
-    padding: 0 var(--sp-2);
+.update-later {
+    padding: var(--sp-2) var(--sp-4);
     font-size: 13px;
-    line-height: 1;
     color: var(--text-2);
     background: none;
-    border: none;
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
     cursor: pointer;
-    transition: color var(--dur) var(--ease-out);
+    transition: color var(--dur) var(--ease-out), border-color var(--dur) var(--ease-out);
 }
 
-.update-dismiss:hover { color: var(--text-1); }
+.update-later:hover { color: var(--text-1); border-color: var(--border-hover); }
+
+.update-progress {
+    height: 8px;
+    margin-bottom: var(--sp-3);
+    border-radius: 999px;
+    background: var(--bg-0);
+    overflow: hidden;
+}
+
+.update-progress-fill {
+    height: 100%;
+    background: var(--ac);
+    transition: width 0.2s var(--ease-out);
+}
 
 /* ==========================================================================
    Reset & Base

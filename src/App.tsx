@@ -5,7 +5,7 @@ import { Dashboard } from "./components/Dashboard"
 import { LiveActivity } from "./components/LiveActivity"
 import { PeriodSelector } from "./components/PeriodSelector"
 import { PlayerSearch } from "./components/PlayerSearch"
-import { UpdateBanner } from "./components/UpdateBanner"
+import { UpdateModal } from "./components/UpdateModal"
 import { hasApiKey } from "./bungie/client"
 import { searchPlayers } from "./bungie/api"
 import { SelectedPlayer, useActivities } from "./hooks/useActivities"
@@ -132,7 +132,7 @@ export default function App() {
 
     return (
         <div className="app">
-            <UpdateBanner />
+            <UpdateModal />
             <div className="topbar">
                 <h1>
                     Hub <span>&middot; Destiny 2</span>
