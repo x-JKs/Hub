@@ -384,10 +384,17 @@ export async function getCurrentActivity(
     const data = res.characterActivities?.data
     if (!data) return null
 
-    // Most-recently-started character wins (matches Yute / threepole).
+    // Matches Yute's UpdateCurrent: among characters, the one actually IN an
+    // activity (valid non-zero hash) wins over one sitting in orbit; ties break on
+    // the most-recently-started. If every character is in orbit we still return the
+    // newest (hash 0) so the caller treats it as orbit.
     let best: { currentActivityHash: number; dateActivityStarted: string; currentActivityModeType?: number } | null = null
     for (const a of Object.values(data)) {
-        if (!best || new Date(a.dateActivityStarted) > new Date(best.dateActivityStarted)) best = a
+        if (!best) { best = a; continue }
+        const aValid = (a.currentActivityHash ?? 0) !== 0
+        const bValid = (best.currentActivityHash ?? 0) !== 0
+        if (aValid !== bValid) { if (aValid) best = a; continue }
+        if (new Date(a.dateActivityStarted) > new Date(best.dateActivityStarted)) best = a
     }
     if (!best) return null
     return {

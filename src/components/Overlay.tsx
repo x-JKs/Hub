@@ -4,6 +4,7 @@ import {
     getCharacters,
     getCurrentActivity,
     getLatestCompletedActivity,
+    searchPlayers,
 } from "../bungie/api"
 import { ActivityMode } from "../bungie/types"
 import { normalizeRuns } from "../stats/normalize"
@@ -11,6 +12,7 @@ import { resolveActivityName } from "../bungie/manifest"
 import { raidByHash } from "../manifest/raids"
 import { dungeonByHash } from "../manifest/dungeons"
 import { getStoredDestinyMembership, isLoggedIn } from "../bungie/oauth"
+import { getDefaultPlayer } from "../hooks/useLiveActivity"
 import { hasApiKey } from "../bungie/client"
 
 type OvMode = "raids" | "dungeons" | "both"
@@ -164,10 +166,35 @@ export function Overlay() {
         return () => clearInterval(tickRef.current)
     }, [startMs])
 
-    const membership = useCallback(() => {
-        const m = getStoredDestinyMembership()
-        if (!m || !hasApiKey() || !isLoggedIn()) return null
-        return m
+    // Resolve the player to track for the overlay. Like Yute's TryLoadFromConfig,
+    // this does NOT require an OAuth login: it prefers a logged-in membership if
+    // present, otherwise resolves the configured default player by Bungie name /
+    // membership id (searchPlayers). Cached once resolved so we don't re-search.
+    const resolvedMemberRef = useRef<{ membershipType: number; membershipId: string } | null>(null)
+    const membership = useCallback(async (): Promise<{ membershipType: number; membershipId: string } | null> => {
+        if (!hasApiKey()) return null
+        if (resolvedMemberRef.current) return resolvedMemberRef.current
+
+        // 1. Prefer an OAuth-logged-in membership if one exists.
+        if (isLoggedIn()) {
+            const stored = getStoredDestinyMembership()
+            if (stored) {
+                resolvedMemberRef.current = { membershipType: stored.membershipType, membershipId: stored.membershipId }
+                return resolvedMemberRef.current
+            }
+        }
+
+        // 2. Otherwise resolve the default player by name / id — no login needed.
+        const dp = getDefaultPlayer()
+        if (!dp) return null
+        try {
+            const cards = await searchPlayers(dp)
+            if (cards.length > 0) {
+                resolvedMemberRef.current = { membershipType: cards[0].membershipType, membershipId: cards[0].membershipId }
+                return resolvedMemberRef.current
+            }
+        } catch { /* resolution failed — leave uncached so we retry next poll */ }
+        return null
     }, [])
 
     const charIds = useCallback(async (mType: number, mId: string): Promise<string[]> => {
@@ -187,7 +214,7 @@ export function Overlay() {
     // Current activity → timer. Picks the most-recently-started character.
     // Polls continuously (like threepole) so the timer data never freezes.
     const fetchCurrent = useCallback(async () => {
-        const m = membership()
+        const m = await membership()
         if (!m) return
         try {
             const cur = await getCurrentActivity(m.membershipType, m.membershipId)
@@ -208,7 +235,7 @@ export function Overlay() {
 
     // Raid/dungeon clear counts for the active period.
     const fetchClears = useCallback(async () => {
-        const m = membership()
+        const m = await membership()
         if (!m) return
         const { period } = settingsRef.current
         const reset = period === "daily" ? getDailyReset() : getWeeklyReset()
@@ -261,7 +288,7 @@ export function Overlay() {
     // Poll history for a freshly completed activity (any PvE type). When the top
     // completed instance changes, toast its name + API time.
     const checkCompletion = useCallback(async () => {
-        const m = membership()
+        const m = await membership()
         if (!m) return
         try {
             const ids = await charIds(m.membershipType, m.membershipId)
