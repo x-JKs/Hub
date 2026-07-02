@@ -4,7 +4,7 @@
 
 <p>
   <img src="https://img.shields.io/badge/platform-Windows%2010%2F11-0078D6?logo=windows&logoColor=white" alt="Windows 10/11" />
-  <img src="https://img.shields.io/github/v/release/x-JKs/Hub?color=6b5bd2&label=release" alt="Latest release" />
+  <img src="https://img.shields.io/github/package-json/v/x-JKs/Hub?color=6b5bd2&label=version" alt="Version" />
   <img src="https://img.shields.io/github/downloads/x-JKs/Hub/total?color=6b5bd2&label=downloads" alt="Downloads" />
   <img src="https://img.shields.io/github/license/x-JKs/Hub?color=6b5bd2" alt="License" />
 </p>
@@ -17,7 +17,7 @@
 
 **A fast, native desktop tracker for Destiny 2 raids, dungeons &amp; Pantheon — with a live in-game overlay.**
 
-[**Download**](https://github.com/x-JKs/Hub/releases/latest) · [Features](#features) · [Build from source](#build-from-source)
+[**Download**](https://github.com/x-JKs/Hub/releases/latest) · [Getting started](#getting-started) · [Build from source](#build-from-source)
 
 </div>
 
