@@ -22,8 +22,10 @@ try {
 
 function initAutoUpdate() {
     if (!autoUpdater || !app.isPackaged) return
-    autoUpdater.autoDownload = true
-    autoUpdater.autoInstallOnAppQuit = true
+    // Opt-in: never download or install without the user asking. We only CHECK,
+    // notify the UI, and act on explicit "download"/"install" requests from it.
+    autoUpdater.autoDownload = false
+    autoUpdater.autoInstallOnAppQuit = false
 
     // Push update state to every window so the renderer can show an in-app prompt.
     const notify = payload => {
@@ -48,13 +50,19 @@ function initAutoUpdate() {
         notify({ state: "error" })
     })
 
-    // Renderer asks to install now → quit and relaunch into the new version.
+    // User clicked "Update" → download in the background (shows progress).
+    ipcMain.on("update:download", () => {
+        try { autoUpdater.downloadUpdate() }
+        catch (e) { console.warn("[updater] download failed:", e?.message ?? e) }
+    })
+    // User clicked "Restart & install" → quit and relaunch into the new version.
     ipcMain.on("update:install", () => {
         try { autoUpdater.quitAndInstall() }
         catch (e) { console.warn("[updater] install failed:", e?.message ?? e) }
     })
 
-    // Check on launch and every 30 min while running.
+    // Only CHECK (does not download, since autoDownload is off) on launch and
+    // every 30 min while running.
     const check = () => autoUpdater.checkForUpdates().catch(e =>
         console.warn("[updater] check failed:", e?.message ?? e)
     )

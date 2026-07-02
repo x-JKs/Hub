@@ -42,5 +42,6 @@ contextBridge.exposeInMainWorld("electronWindow", {
         ipcRenderer.on("update:status", handler)
         return () => ipcRenderer.removeListener("update:status", handler)
     },
+    downloadUpdate: () => ipcRenderer.send("update:download"),
     installUpdate: () => ipcRenderer.send("update:install"),
 })

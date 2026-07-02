@@ -89,6 +89,19 @@
 
 .update-btn:hover { filter: brightness(1.1); }
 
+.update-dismiss {
+    padding: 0 var(--sp-2);
+    font-size: 13px;
+    line-height: 1;
+    color: var(--text-2);
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: color var(--dur) var(--ease-out);
+}
+
+.update-dismiss:hover { color: var(--text-1); }
+
 /* ==========================================================================
    Reset & Base
    ========================================================================== */

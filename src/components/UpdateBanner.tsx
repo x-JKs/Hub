@@ -7,41 +7,53 @@ type Status =
     | { state: "error" }
 
 /**
- * In-app auto-update prompt. The main process (electron-updater) pushes status
- * over the "update:status" channel: a new release is found → downloaded in the
- * background → "ready", at which point we show a Restart button that installs it.
+ * In-app auto-update prompt — fully opt-in. The main process (electron-updater)
+ * only CHECKS for a new release and reports it here; nothing downloads or installs
+ * unless the user clicks. Flow: "available" → user clicks Update → "progress" →
+ * "ready" → user clicks Restart & install. A dismiss (✕) lets them ignore it.
  */
 export function UpdateBanner() {
     const [status, setStatus] = useState<Status | null>(null)
+    const [dismissed, setDismissed] = useState(false)
 
     useEffect(() => {
-        const unsub = window.electronWindow?.onUpdateStatus(setStatus)
+        const unsub = window.electronWindow?.onUpdateStatus(s => {
+            setStatus(s)
+            setDismissed(false)
+        })
         return () => unsub?.()
     }, [])
 
-    if (!status || status.state === "error") return null
+    if (!status || status.state === "error" || dismissed) return null
 
     if (status.state === "ready") {
         return (
             <div className="update-banner ready">
-                <span>
-                    Update{status.version ? ` v${status.version}` : ""} ready to install.
-                </span>
+                <span>Update{status.version ? ` v${status.version}` : ""} downloaded and ready.</span>
                 <button className="update-btn" onClick={() => window.electronWindow?.installUpdate()}>
-                    Restart &amp; update
+                    Restart &amp; install
                 </button>
+                <button className="update-dismiss" title="Later" onClick={() => setDismissed(true)}>✕</button>
             </div>
         )
     }
 
-    const label =
-        status.state === "progress" && typeof status.percent === "number"
-            ? `Downloading update… ${status.percent}%`
-            : "A new version is available — downloading…"
+    if (status.state === "progress") {
+        return (
+            <div className="update-banner">
+                <span>Downloading update… {status.percent ?? 0}%</span>
+            </div>
+        )
+    }
 
+    // available — offer the choice; nothing has downloaded yet.
     return (
         <div className="update-banner">
-            <span>{label}</span>
+            <span>A new version{status.version ? ` (v${status.version})` : ""} is available.</span>
+            <button className="update-btn" onClick={() => window.electronWindow?.downloadUpdate()}>
+                Update
+            </button>
+            <button className="update-dismiss" title="Later" onClick={() => setDismissed(true)}>✕</button>
         </div>
     )
 }
