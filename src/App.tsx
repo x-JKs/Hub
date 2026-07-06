@@ -5,6 +5,7 @@ import { Dashboard } from "./components/Dashboard"
 import { LiveActivity } from "./components/LiveActivity"
 import { PeriodSelector } from "./components/PeriodSelector"
 import { PlayerSearch } from "./components/PlayerSearch"
+import { ActivityHistoryPage } from "./components/ActivityHistoryPage"
 import { UpdateModal } from "./components/UpdateModal"
 import { hasApiKey } from "./bungie/client"
 import { searchPlayers } from "./bungie/api"
@@ -15,13 +16,14 @@ import { computeStats } from "./stats/compute"
 import { currentPeriod, Granularity, Period, shiftPeriod } from "./stats/period"
 import { TabTransition } from "./motion/components"
 
-type Tab = "overview" | "raids" | "dungeons" | "pantheon"
+type Tab = "overview" | "raids" | "dungeons" | "pantheon" | "history"
 
 const TABS: { id: Tab; label: string }[] = [
     { id: "overview", label: "Overview" },
     { id: "raids", label: "Raids" },
     { id: "dungeons", label: "Dungeons" },
     { id: "pantheon", label: "Pantheon" },
+    { id: "history", label: "History" },
 ]
 
 export default function App() {
@@ -93,6 +95,9 @@ export default function App() {
     }, [keyPresent])
 
     function renderContent() {
+        // History loads its own (weekly) data independently of the main stats load.
+        if (tab === "history") return <ActivityHistoryPage player={player!} />
+
         if (loading) {
             if (tab === "raids" || tab === "dungeons" || tab === "pantheon") return <ActivityListSkeleton />
             return (

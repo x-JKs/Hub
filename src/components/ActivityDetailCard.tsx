@@ -86,6 +86,10 @@ export function ActivityDetailCard({
                                     <b>{fmtNum(data.trackedCompleted)}</b>
                                     <span>Tracked clears</span>
                                 </span>
+                                <span className="clears-pop-row">
+                                    <b>{freshLoading ? "…" : fmtNum(data.fullClears)}</b>
+                                    <span>Full clears</span>
+                                </span>
                             </span>
                         )}
                     </div>
@@ -95,16 +99,26 @@ export function ActivityDetailCard({
                         <b>{data.clearsThisMonth}</b> this month
                     </div>
                     {data.recent.length > 0 && (
-                        <div className="dots" title="Most recent runs (newest first)">
-                            {data.recent.map((r, i) => (
-                                <span
-                                    key={i}
-                                    className={`dot ${r.completed ? "ok" : "bad"}`}
-                                    title={`${r.date.toLocaleDateString()} — ${
-                                        r.completed ? "Clear" : "Incomplete"
-                                    }`}
-                                />
-                            ))}
+                        <div className="dots" title="Recent runs — oldest (left) to newest (right)">
+                            {data.recent.slice().reverse().map((r, i) =>
+                                r.completed && r.lowman ? (
+                                    <span
+                                        key={i}
+                                        className="dot star"
+                                        title={`${r.date.toLocaleDateString()} — Lowman clear`}
+                                    >
+                                        ★
+                                    </span>
+                                ) : (
+                                    <span
+                                        key={i}
+                                        className={`dot ${r.completed ? "ok" : "bad"}`}
+                                        title={`${r.date.toLocaleDateString()} — ${
+                                            r.completed ? "Clear" : "Incomplete"
+                                        }`}
+                                    />
+                                )
+                            )}
                         </div>
                     )}
                 </div>

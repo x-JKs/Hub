@@ -119,12 +119,33 @@ export async function resolveClassIcons(): Promise<Record<string, string>> {
 }
 
 export async function resolveActivityName(hash: number): Promise<string | null> {
+    return (await resolveActivityInfo(hash)).name
+}
+
+export interface ActivityInfo {
+    name: string | null
+    /** Full URL of the activity's wide pgcr banner image, or null. */
+    image: string | null
+}
+
+const activityInfoCache = new Map<number, ActivityInfo>()
+
+/** Name + banner image for an activity hash (DestinyActivityDefinition). Cached. */
+export async function resolveActivityInfo(hash: number): Promise<ActivityInfo> {
+    const cached = activityInfoCache.get(hash)
+    if (cached) return cached
     try {
         const def = await bungieGet<{
             displayProperties: { name: string }
+            pgcrImage?: string
         }>(`/Destiny2/Manifest/DestinyActivityDefinition/${hash}/`)
-        return def.displayProperties.name || null
+        const info: ActivityInfo = {
+            name: def.displayProperties.name || null,
+            image: def.pgcrImage ? "https://www.bungie.net" + def.pgcrImage : null,
+        }
+        activityInfoCache.set(hash, info)
+        return info
     } catch {
-        return null
+        return { name: null, image: null }
     }
 }

@@ -24,6 +24,9 @@ export interface RecentRun {
     date: Date
     completed: boolean
     durationSeconds: number
+    /** Completed with fewer than a full team (Solo/Duo/Trio for raids, Solo/Duo
+     *  for dungeons) — flagged so the dots can mark it with a star. */
+    lowman: boolean
 }
 
 export interface ActivityBreakdown {
@@ -53,6 +56,8 @@ export interface ActivityBreakdown {
     /** Completed attempts among the tracked history runs (for a success rate). */
     trackedCompleted: number
     trackedTotal: number
+    /** PGCR-verified fresh full clears among the tracked runs (vs checkpoint clears). */
+    fullClears: number
     versions: VersionStat[]
     recent: RecentRun[]
 }
@@ -111,15 +116,20 @@ interface RecentAgg {
     recent: RecentRun[]
 }
 
-function lowmanLabel(n: number): ActivityBreakdown["lowman"] {
+// Dungeons are 3-player, so Duo/Trio aren't lowman feats there — only Solo is.
+// (Duo/Trio tags are suppressed for dungeons; see computeActivityBreakdown for
+// how a duo/trio dungeon FLAWLESS collapses to a plain "Flawless".)
+function lowmanLabel(n: number, category: Category): ActivityBreakdown["lowman"] {
     if (n === 1) return "Solo"
+    if (category === "dungeon") return null
     if (n === 2) return "Duo"
     if (n === 3) return "Trio"
     return null
 }
 
-function lowmanFlawlessLabel(n: number): ActivityBreakdown["lowmanFlawless"] {
+function lowmanFlawlessLabel(n: number, category: Category): ActivityBreakdown["lowmanFlawless"] {
     if (n === 1) return "Solo Flawless"
+    if (category === "dungeon") return null
     if (n === 2) return "Duo Flawless"
     if (n === 3) return "Trio Flawless"
     return null
@@ -160,12 +170,17 @@ function recentByGroup(runs: ActivityRun[], category: Category): Map<string, Rec
             if (run.isDayOne) agg.dayOne = true
         }
         if (run.date > agg.lastPlayed) agg.lastPlayed = run.date
-        if (agg.recent.length < RECENT_COUNT)
+        if (agg.recent.length < RECENT_COUNT) {
+            // Lowman: raids (6-player) star Solo/Duo/Trio (1–3); dungeons
+            // (3-player) only star Solo (Duo/Trio aren't lowman feats there).
+            const lowmanCap = category === "dungeon" ? 1 : 3
             agg.recent.push({
                 date: run.date,
                 completed: run.completed,
-                durationSeconds: run.durationSeconds
+                durationSeconds: run.durationSeconds,
+                lowman: run.completed && run.playerCount > 0 && run.playerCount <= lowmanCap
             })
+        }
         map.set(run.groupKey, agg)
     }
     return map
@@ -231,6 +246,7 @@ export function buildLifetimeBreakdowns(
                 dayOne: false,
                 trackedCompleted: 0,
                 trackedTotal: 0,
+                fullClears: 0,
                 versions: [],
                 recent: [],
                 _versions: new Map(),
@@ -291,6 +307,7 @@ export function buildLifetimeBreakdowns(
                 dayOne: false,
                 trackedCompleted: 0,
                 trackedTotal: 0,
+                fullClears: 0,
                 versions: [],
                 recent: [],
                 _versions: new Map(),
@@ -305,14 +322,23 @@ export function buildLifetimeBreakdowns(
         const fresh = freshFastest?.get(g.groupKey)
         // Flawless requires a PGCR-verified fresh full clear (not a checkpoint).
         const flaw = freshFlawless?.get(g.groupKey)
-        g.lowmanFlawless = lowmanFlawlessLabel(flaw?.lowmanFlawless ?? Infinity)
-        g.fullTeamFlawless = flaw?.fullTeamFlawless ?? false
+        let lowmanFlawlessN = flaw?.lowmanFlawless ?? null
+        let fullTeamFlawless = flaw?.fullTeamFlawless ?? false
+        // Dungeons: a Duo/Trio flawless isn't a "lowman" tag — collapse it to a
+        // plain "Flawless" so no Duo/Trio label ever shows on a dungeon.
+        if (category === "dungeon" && lowmanFlawlessN !== null && lowmanFlawlessN >= 2) {
+            fullTeamFlawless = true
+            lowmanFlawlessN = null
+        }
+        g.lowmanFlawless = lowmanFlawlessLabel(lowmanFlawlessN ?? Infinity, category)
+        g.fullTeamFlawless = fullTeamFlawless
         g.kd = g.deaths > 0 ? g.kills / g.deaths : g.kills
         const sunsetFallback = sunsetKeys.has(g.groupKey) && fresh?.overallSeconds === null
         g.fastestSeconds = fresh?.overallSeconds
             ?? (sunsetFallback ? (fresh?.durationFallbackSeconds ?? g._aggFastest) : null)
         g.fastestInstanceId = fresh?.overallInstanceId
             ?? (sunsetFallback ? (fresh?.durationFallbackInstanceId ?? null) : null)
+        g.fullClears = fresh?.fullClears ?? 0
         g.versions = [...g._versions.values()]
             .filter(v => v.clears > 0)
             .map(v => ({
@@ -328,7 +354,7 @@ export function buildLifetimeBreakdowns(
             g.clearsThisWeek = r.thisWeek
             g.clearsThisMonth = r.thisMonth
             g.lastPlayed = r.lastPlayed
-            g.lowman = lowmanLabel(r.lowman)
+            g.lowman = lowmanLabel(r.lowman, category)
             g.dayOne = r.dayOne
             g.trackedCompleted = r.trackedCompleted
             g.trackedTotal = r.trackedTotal

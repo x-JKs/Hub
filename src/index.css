@@ -1037,6 +1037,24 @@ button { font-family: inherit; }
     color: #9d8aff;
 }
 
+/* Fresh-vs-checkpoint tags shown on a single clear's report */
+.tag-full {
+    border-color: color-mix(in srgb, var(--success) 40%, transparent);
+    color: var(--success);
+}
+
+.tag-checkpoint {
+    border-color: var(--border-hover);
+    color: var(--text-2);
+}
+
+.pgcr-detail-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2);
+    margin-top: var(--sp-3);
+}
+
 /* --- Body grid --- */
 .detail-body {
     display: grid;
@@ -1093,6 +1111,20 @@ button { font-family: inherit; }
 
 .dot.ok { background: var(--success); opacity: 0.7; }
 .dot.bad { background: var(--danger); opacity: 0.6; }
+
+/* Lowman/flawless clear — same green circle as a normal clear, with a gold
+   star marker on top so it still matches the other dots. */
+.dot.star {
+    background: var(--success);
+    opacity: 0.85;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ac);
+    font-size: 6px;
+    line-height: 1;
+    overflow: visible;
+}
 
 /* Stat rows (fastest, time, kd) */
 .detail-mini,
@@ -2041,6 +2073,7 @@ button { font-family: inherit; }
 }
 
 .pgcr-clear-row {
+    position: relative;
     display: grid;
     grid-template-columns: 1.6fr 0.8fr 0.6fr 0.8fr 0.5fr;
     gap: var(--sp-2);
@@ -2053,6 +2086,7 @@ button { font-family: inherit; }
     color: var(--text-1);
     cursor: pointer;
     text-align: left;
+    font-variant-numeric: tabular-nums;
     transition: background var(--dur) var(--ease-out);
     font-family: var(--font-body);
 }
@@ -2060,6 +2094,18 @@ button { font-family: inherit; }
 .pgcr-clear-row:hover {
     background: color-mix(in srgb, var(--text-1) 4%, transparent);
 }
+
+/* status-colored accent bar on clears (matches the History list) */
+.pgcr-clear-row::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 2px;
+    background: transparent;
+    transition: background var(--dur) var(--ease-out);
+}
+.pgcr-clear-row.clear::before { background: color-mix(in srgb, var(--success) 28%, transparent); }
+.pgcr-clear-row.clear:hover::before { background: color-mix(in srgb, var(--success) 65%, transparent); }
 
 .cl-date {
     display: flex;
@@ -2081,14 +2127,25 @@ button { font-family: inherit; }
 }
 
 .cl-status {
-    font-size: 11px;
+    justify-self: start;
+    font-size: 10px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.03em;
+    letter-spacing: 0.04em;
+    padding: 3px 9px;
+    border-radius: var(--r-sm);
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--border);
+    color: var(--text-3);
 }
 
-.cl-status.ok { color: var(--success); }
-.cl-status.bad { color: var(--danger); }
+.cl-status.ok {
+    color: var(--success);
+    border-color: color-mix(in srgb, var(--success) 35%, transparent);
+}
+.cl-status.bad {
+    color: color-mix(in srgb, var(--danger) 65%, var(--text-3));
+}
 
 /* --- Load more --- */
 .pgcr-load-more {
@@ -2112,11 +2169,168 @@ button { font-family: inherit; }
     color: var(--text-1);
 }
 
-/* --- PGCR detail header --- */
-.pgcr-detail-header {
-    padding: var(--sp-4) var(--sp-5);
+/* ==========================================================================
+   Activity History page
+   ========================================================================== */
+.history-page { padding: var(--sp-4) 0; }
+
+.history-sub {
+    padding: 0 var(--sp-1) var(--sp-3);
+    font-size: 12px;
+    color: var(--text-3);
+    letter-spacing: 0.02em;
+}
+.history-sub b { color: var(--text-1); font-weight: 700; }
+
+.history-list {
+    background: transparent;
+    border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+    border-radius: var(--r-lg);
+    overflow: hidden;
+}
+
+.history-head,
+.history-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 0.9fr 0.7fr 0.9fr 0.85fr;
+    gap: var(--sp-3);
+    align-items: center;
+    padding: var(--sp-3) var(--sp-4);
+}
+
+.history-head {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-3);
     border-bottom: 1px solid var(--border);
 }
+
+.history-row {
+    position: relative;
+    width: 100%;
+    text-align: left;
+    font-size: 13px;
+    background: none;
+    border: none;
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 45%, transparent);
+    color: var(--text-1);
+    cursor: pointer;
+    font-variant-numeric: tabular-nums;
+    transition: background var(--dur) var(--ease-out);
+}
+.history-row:last-child { border-bottom: none; }
+.history-row:hover { background: color-mix(in srgb, var(--text-1) 4%, transparent); }
+
+/* status-colored accent bar down the left edge, brightens on hover */
+.history-row::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 2px;
+    z-index: 2;
+    background: transparent;
+    transition: background var(--dur) var(--ease-out);
+}
+.history-row.clear::before { background: color-mix(in srgb, var(--success) 28%, transparent); }
+.history-row.clear:hover::before { background: color-mix(in srgb, var(--success) 65%, transparent); }
+/* DNF rows stay plain — no accent bar — so clears are what draw the eye. */
+
+/* faint activity banner art behind each row (edge-faded, kept readable) */
+.h-bg {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background-size: cover;
+    background-position: center 35%;
+    opacity: 0.14;
+    pointer-events: none;
+    transition: opacity var(--dur) var(--ease-out);
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 28%, #000 78%, transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 28%, #000 78%, transparent);
+}
+.history-row:hover .h-bg { opacity: 0.22; }
+.history-row > span:not(.h-bg) { position: relative; z-index: 1; }
+
+.h-name {
+    font-weight: 600;
+    color: var(--text-1);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.h-date {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    font-size: 12px;
+    color: var(--text-2);
+}
+.h-date small { color: var(--text-3); font-size: 10px; }
+
+.h-dur, .h-pc, .h-kd { color: var(--text-2); white-space: nowrap; }
+
+/* status tag — matches the card badges (quiet dark tag, colored text) */
+.h-status {
+    justify-self: start;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 3px 9px;
+    border-radius: var(--r-sm);
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--border);
+    color: var(--text-3);
+}
+.h-status.ok {
+    color: var(--success);
+    border-color: color-mix(in srgb, var(--success) 35%, transparent);
+}
+.h-status.bad {
+    color: color-mix(in srgb, var(--danger) 65%, var(--text-3));
+}
+
+.history-more {
+    display: block;
+    width: 100%;
+    margin-top: var(--sp-3);
+    padding: 11px;
+    border-radius: var(--r-md);
+    border: 1px solid var(--border);
+    background: var(--bg-2);
+    color: var(--text-2);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background var(--dur) var(--ease-out), border-color var(--dur) var(--ease-out), color var(--dur) var(--ease-out);
+}
+.history-more:hover { background: var(--bg-3); border-color: var(--border-hover); color: var(--text-1); }
+
+/* --- PGCR detail header --- */
+.pgcr-detail-header {
+    position: relative;
+    padding: var(--sp-4) var(--sp-5);
+    border-bottom: 1px solid var(--border);
+    overflow: hidden;
+}
+.pgcr-detail-header.has-art { padding-top: var(--sp-6); }
+
+.pgcr-detail-bg {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center 30%;
+    opacity: 0.35;
+}
+.pgcr-detail-scrim {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(12, 12, 17, 0.35) 0%, rgba(12, 12, 17, 0.92) 100%);
+}
+.pgcr-detail-headtext { position: relative; }
 
 .pgcr-detail-name {
     font-family: var(--font-display);

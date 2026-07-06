@@ -17,6 +17,8 @@ import { ActivityRun } from "./compute"
 export interface FreshFastest {
     overallSeconds: number | null
     overallInstanceId: string | null
+    /** Count of PGCR-verified fresh full clears among the checked (tracked) runs. */
+    fullClears: number
     versions: Map<string, number | null>
     versionInstanceIds: Map<string, string | null>
     /** True when PGCRs for this activity lack the freshness field entirely. */
@@ -82,6 +84,7 @@ export async function computeFreshFastest(
             let overall: number | null = null
             let overallId: string | null = null
             let anyBooleanResult = false
+            let freshCount = 0
 
             // Duration-based fallback: fastest run above 33% of average
             // (filters checkpoint clears which are much shorter than full runs)
@@ -102,6 +105,7 @@ export async function computeFreshFastest(
                 const r: FreshFastest = {
                     overallSeconds: overall,
                     overallInstanceId: overallId,
+                    fullClears: freshCount,
                     versions: new Map(versions),
                     versionInstanceIds: new Map(versionIds),
                     pgcrUnavailable: !anyBooleanResult,
@@ -114,24 +118,25 @@ export async function computeFreshFastest(
                 onGroup?.(groupKey, r)
             }
 
+            // Check every completed run (cheapest-first): the FIRST fresh one is
+            // the fastest fresh clear, and we tally all of them for the full-clear
+            // count. (No early-break now that we need the total — bounded by
+            // MAX_CHECKS_PER_GROUP and cached in localStorage after the first pass.)
             for (let i = 0; i < clears.length && i < MAX_CHECKS_PER_GROUP; i++) {
-                if (overall !== null && versions.size === versionsPresent.size) break
-
                 const run = clears[i]
                 const fresh = await limit(() => getPgcrFresh(run.instanceId))
                 if (fresh !== null) anyBooleanResult = true
                 if (fresh !== true) continue
 
-                let changed = false
+                freshCount++
+                let changed = true // freshCount changed → refresh the card's count
                 if (overall === null) {
                     overall = run.durationSeconds
                     overallId = run.instanceId
-                    changed = true
                 }
                 if (!versions.has(run.versionName)) {
                     versions.set(run.versionName, run.durationSeconds)
                     versionIds.set(run.versionName, run.instanceId)
-                    changed = true
                 }
                 if (changed) emit()
             }

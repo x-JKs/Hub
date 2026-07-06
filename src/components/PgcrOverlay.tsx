@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { getFullPgcr } from "../bungie/api"
-import { resolveActivityName, resolveClassIcons, getCachedClassIcon, resolveItems } from "../bungie/manifest"
+import { resolveActivityInfo, resolveClassIcons, getCachedClassIcon, resolveItems } from "../bungie/manifest"
+import { raidByHash, raidSplashUrl } from "../manifest/raids"
 import type { ManifestItemDef, PgcrEntry, PgcrResponse } from "../bungie/types"
 import type { ActivityRun } from "../stats/compute"
 import { formatAvgDuration } from "../stats/format"
+import { dungeonByHash } from "../manifest/dungeons"
 import { AnimatedOverlay } from "../motion/components"
 
 // ---------------------------------------------------------------------------
@@ -182,7 +184,7 @@ function ClearsList({
                 {visible.map(r => (
                     <button
                         key={r.instanceId}
-                        className="pgcr-clear-row"
+                        className={`pgcr-clear-row ${r.completed ? "clear" : "dnf"}`}
                         onClick={() => onSelect(r.instanceId)}
                     >
                         <span className="cl-date">
@@ -214,6 +216,7 @@ function PgcrDetail({
     items,
     classIcons,
     activityName,
+    activityImage,
     onBack,
     onClose,
     onPlayerClick,
@@ -222,6 +225,7 @@ function PgcrDetail({
     items: Map<number, ManifestItemDef>
     classIcons: Record<string, string>
     activityName: string
+    activityImage: string | null
     onBack: () => void
     onClose: () => void
     onPlayerClick: (index: number) => void
@@ -234,6 +238,25 @@ function PgcrDetail({
     const totalAssists = entries.reduce((s, e) => s + val(e, "assists"), 0)
     const totalSupers = entries.reduce((s, e) => s + val(e, "weaponKillsSuper"), 0)
     const teamKd = totalDeaths > 0 ? (totalKills / totalDeaths).toFixed(2) : totalKills.toFixed(2)
+
+    // Per-clear badges (lowman / flawless) + fresh-vs-checkpoint, from THIS PGCR.
+    const distinctPlayers = new Set(entries.map(e => e.player.destinyUserInfo.membershipId)).size
+    const cleared = entries.some(e => val(e, "completed") === 1)
+    const fresh = pgcr.activityWasStartedFromBeginning // boolean | undefined
+    const isDungeon = !!dungeonByHash(pgcr.activityDetails.referenceId)
+    // Flawless = whole-team 0 deaths on a fresh full clear. Lowman = below a full
+    // team (dungeons: only Solo counts, matching the card).
+    const isFlawless = cleared && totalDeaths === 0 && fresh === true
+    const lowmanTag =
+        !cleared ? null
+        : distinctPlayers === 1 ? "Solo"
+        : isDungeon ? null
+        : distinctPlayers === 2 ? "Duo"
+        : distinctPlayers === 3 ? "Trio"
+        : null
+    const runBadges: string[] = []
+    if (isFlawless) runBadges.push(lowmanTag ? `${lowmanTag} Flawless` : "Flawless")
+    else if (lowmanTag) runBadges.push(lowmanTag)
 
     const mvp = entries[0]
     const mostAssists = [...entries].sort((a, b) => val(b, "assists") - val(a, "assists"))[0]
@@ -260,13 +283,30 @@ function PgcrDetail({
                 <button className="pgcr-back" onClick={onBack}>&larr; Back</button>
                 <button className="pgcr-close" onClick={onClose}>&times;</button>
             </div>
-            <div className="pgcr-detail-header">
-                <div className="pgcr-detail-name">{activityName}</div>
-                <div className="pgcr-detail-date">
-                    {date.toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" })}{" "}
-                    {date.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}
-                    {durationSeconds > 0 && (
-                        <span className="pgcr-detail-dur"> &middot; {formatAvgDuration(durationSeconds)}</span>
+            <div className={`pgcr-detail-header${activityImage ? " has-art" : ""}`}>
+                {activityImage && (
+                    <>
+                        <div className="pgcr-detail-bg" style={{ backgroundImage: `url(${activityImage})` }} />
+                        <div className="pgcr-detail-scrim" />
+                    </>
+                )}
+                <div className="pgcr-detail-headtext">
+                    <div className="pgcr-detail-name">{activityName}</div>
+                    <div className="pgcr-detail-date">
+                        {date.toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" })}{" "}
+                        {date.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}
+                        {durationSeconds > 0 && (
+                            <span className="pgcr-detail-dur"> &middot; {formatAvgDuration(durationSeconds)}</span>
+                        )}
+                    </div>
+                    {(runBadges.length > 0 || fresh !== undefined) && (
+                        <div className="pgcr-detail-badges">
+                            {runBadges.map(b => (
+                                <span key={b} className={`tag tag-${b.toLowerCase().replace(/\s+/g, "")}`}>{b}</span>
+                            ))}
+                            {fresh === true && <span className="tag tag-full">Full Clear</span>}
+                            {fresh === false && <span className="tag tag-checkpoint">Checkpoint</span>}
+                        </div>
                     )}
                 </div>
             </div>
@@ -534,6 +574,7 @@ export function PgcrOverlay({
     const [pgcrItems, setPgcrItems] = useState<Map<number, ManifestItemDef>>(new Map())
     const [pgcrClassIcons, setPgcrClassIcons] = useState<Record<string, string>>({})
     const [pgcrActivityName, setPgcrActivityName] = useState("")
+    const [pgcrActivityImage, setPgcrActivityImage] = useState<string | null>(null)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const loadedIdRef = useRef<string | null>(null)
@@ -562,6 +603,7 @@ export function PgcrOverlay({
         setLoading(true)
         setError(null)
         setPgcrData(null)
+        setPgcrActivityImage(null)
 
         ;(async () => {
             try {
@@ -573,8 +615,22 @@ export function PgcrOverlay({
                 setPgcrClassIcons(classIcons)
                 setPgcrActivityName((current as PgcrView).fromActivity)
 
-                const resolved = await resolveActivityName(pgcr.activityDetails.referenceId)
-                if (resolved) setPgcrActivityName(resolved)
+                // Name + banner image. Curated raid/dungeon splash art first
+                // (nicer), else the manifest's activity image.
+                const ref = pgcr.activityDetails.referenceId
+                const raid = raidByHash(ref)
+                const dungeon = dungeonByHash(ref)
+                if (raid) {
+                    setPgcrActivityName(raid.name)
+                    setPgcrActivityImage(raidSplashUrl(raid.splashSlug))
+                } else if (dungeon) {
+                    setPgcrActivityName(dungeon.name)
+                    setPgcrActivityImage(dungeon.splashUrl)
+                } else {
+                    const info = await resolveActivityInfo(ref)
+                    if (info.name) setPgcrActivityName(info.name)
+                    setPgcrActivityImage(info.image)
+                }
 
                 const hashesToResolve: number[] = []
                 for (const e of pgcr.entries) {
@@ -640,6 +696,7 @@ export function PgcrOverlay({
                             items={pgcrItems}
                             classIcons={pgcrClassIcons}
                             activityName={pgcrActivityName}
+                            activityImage={pgcrActivityImage}
                             onBack={pop}
                             onClose={onClose}
                             onPlayerClick={idx => {

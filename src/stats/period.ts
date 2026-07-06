@@ -10,6 +10,20 @@ export interface Period {
     sublabel: string // e.g. "Calendar Month"
 }
 
+/** Most recent Destiny daily reset (17:00 UTC). */
+export function getDailyReset(): Date {
+    const now = new Date()
+    const today17 = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 17, 0, 0))
+    return now >= today17 ? today17 : new Date(today17.getTime() - 86400000)
+}
+
+/** Most recent Destiny weekly reset (Tuesday 17:00 UTC). */
+export function getWeeklyReset(): Date {
+    const daily = getDailyReset()
+    const diff = (daily.getUTCDay() + 5) % 7 // days since Tuesday
+    return new Date(daily.getTime() - diff * 86400000)
+}
+
 function startOfDay(d: Date): Date {
     return new Date(d.getFullYear(), d.getMonth(), d.getDate())
 }
