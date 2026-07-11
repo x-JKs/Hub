@@ -27,7 +27,7 @@ Hub pulls a Guardian's complete raid, dungeon and Pantheon history straight from
 
 ## Download
 
-> **Windows 10/11 · no setup, no API key.** Just install and search any Guardian.
+> **Windows 10/11** Just install and search any Guardian.
 
 1. Download the latest **`Hub Setup x.x.x.exe`** from the [**Releases page**](https://github.com/x-JKs/Hub/releases/latest).
 2. Run it — Hub installs to your Start menu (just type **“Hub”** in Windows search).
@@ -68,16 +68,6 @@ npm run dist   # NSIS installer    -> release/Hub Setup <version>.exe   (run fro
 > \* electron-builder's `winCodeSign` step extracts symlinks and needs symlink privileges — run from an **Administrator** terminal, or enable Windows **Developer Mode** once.
 
 Released builds bake in the maintainer's Bungie key at build time; when building from source you supply your **own** key in `.env` (the file is git-ignored and never committed).
-
-## Releasing
-
-Pushing a `v*` tag runs [.github/workflows/release.yml](.github/workflows/release.yml): tests, renderer build (with the `VITE_BUNGIE_API_KEY` repo secret baked in), then `electron-builder` publishes the NSIS installer and auto-update feed to the GitHub release. [ci.yml](.github/workflows/ci.yml) typechecks, tests and builds every push/PR.
-
-## Code signing &amp; SmartScreen
-
-## Debugging user reports
-
-Both processes append errors to `%APPDATA%/Hub/hub.log` (rotated at 512 KB). Ask users to attach it when reporting crashes.
 
 ## Stack
 
