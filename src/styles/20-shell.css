@@ -8,6 +8,12 @@
     justify-content: space-between;
     gap: var(--sp-4);
     margin-bottom: var(--sp-8);
+    /* The shell-reveal animation leaves a transform on this element (stacking
+       context), and the tab content below keeps a filter from its transitions
+       (also a stacking context). Explicitly layer the topbar above the content
+       so the search dropdown is never painted under it. */
+    position: relative;
+    z-index: 50;
 }
 
 .topbar h1 {
@@ -94,8 +100,26 @@
     background: var(--bg-3);
     border: 1px solid var(--border);
     border-radius: var(--r-md);
+    /* Cap long result lists (searching "was" returns dozens) — scroll inside
+       the dropdown instead of sprawling down the page. */
     overflow: hidden;
+    overflow-y: auto;
+    max-height: min(420px, 60vh);
     box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
+}
+
+.search-results::-webkit-scrollbar {
+    width: 6px;
+}
+
+.search-results::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 3px;
+}
+
+.search-results::-webkit-scrollbar-track {
+    background: transparent;
+    margin-block: var(--r-md);
 }
 
 .search-results button {
