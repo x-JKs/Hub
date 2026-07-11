@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/banner.png" alt="Hub — Destiny 2 Activity Tracker &amp; Finder" width="100%" />
+
 
 <p>
   <img src="https://img.shields.io/badge/platform-Windows%2010%2F11-0078D6?logo=windows&logoColor=white" alt="Windows 10/11" />
