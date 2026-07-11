@@ -45,3 +45,8 @@ contextBridge.exposeInMainWorld("electronWindow", {
     downloadUpdate: () => ipcRenderer.send("update:download"),
     installUpdate: () => ipcRenderer.send("update:install"),
 })
+
+// Renderer error reporting → userData/hub.log (see main.cjs logError).
+contextBridge.exposeInMainWorld("electronLog", {
+    error: (message) => ipcRenderer.send("log:error", String(message)),
+})

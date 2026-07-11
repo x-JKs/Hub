@@ -8,6 +8,7 @@ import { formatAvgDuration } from "../stats/format"
 import { getWeeklyReset } from "../stats/period"
 import type { SelectedPlayer } from "../hooks/useActivities"
 import { PgcrOverlay } from "./PgcrOverlay"
+import { parallaxHandlers } from "../motion/hooks"
 
 const PAGE = 20
 
@@ -43,7 +44,13 @@ export function ActivityHistoryPage({ player }: { player: SelectedPlayer }) {
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
     const [shown, setShown] = useState(PAGE)
+    // First index of the newest batch — rows from here stagger in; earlier rows
+    // are already mounted and don't re-animate.
+    const [batchStart, setBatchStart] = useState(0)
     const [pgcr, setPgcr] = useState<{ instanceId: string; name: string } | null>(null)
+    // Bumped by the Retry button to re-run the fetch effect after an error.
+    const [retryNonce, setRetryNonce] = useState(0)
+    const [filter, setFilter] = useState<"all" | "clear" | "dnf">("all")
 
     useEffect(() => {
         let cancelled = false
@@ -115,7 +122,7 @@ export function ActivityHistoryPage({ player }: { player: SelectedPlayer }) {
         })()
 
         return () => { cancelled = true }
-    }, [player.membershipType, player.membershipId])
+    }, [player.membershipType, player.membershipId, retryNonce])
 
     if (loading)
         return (
@@ -124,16 +131,43 @@ export function ActivityHistoryPage({ player }: { player: SelectedPlayer }) {
                 Loading activity history&hellip;
             </div>
         )
-    if (error) return <div className="state error">{error}</div>
+    if (error)
+        return (
+            <div className="state error">
+                {error}
+                <button className="state-retry" onClick={() => setRetryNonce(n => n + 1)}>
+                    Retry
+                </button>
+            </div>
+        )
     if (entries.length === 0)
         return <div className="state">No activities since the weekly reset.</div>
 
-    const visible = entries.slice(0, shown)
+    const filtered =
+        filter === "all" ? entries : entries.filter(e => isCompleted(e) === (filter === "clear"))
+    const visible = filtered.slice(0, shown)
 
     return (
         <div className="history-page">
-            <div className="history-sub">
-                <b>{entries.length}</b> {entries.length === 1 ? "activity" : "activities"} since weekly reset
+            <div className="history-sub history-controls">
+                <span>
+                    <b>{filtered.length}</b> {filtered.length === 1 ? "activity" : "activities"} since weekly reset
+                </span>
+                <div className="toggle">
+                    {(["all", "clear", "dnf"] as const).map(f => (
+                        <button
+                            key={f}
+                            className={filter === f ? "active" : ""}
+                            onClick={() => {
+                                setFilter(f)
+                                setShown(PAGE)
+                                setBatchStart(0)
+                            }}
+                        >
+                            {f === "all" ? "All" : f === "clear" ? "Clears" : "Wipes"}
+                        </button>
+                    ))}
+                </div>
             </div>
             <div className="history-list">
                 <div className="history-head">
@@ -144,7 +178,7 @@ export function ActivityHistoryPage({ player }: { player: SelectedPlayer }) {
                     <span>K / D</span>
                     <span>Status</span>
                 </div>
-                {visible.map(e => {
+                {visible.map((e, i) => {
                     const d = e.activityDetails
                     const date = new Date(e.period)
                     const completed = isCompleted(e)
@@ -154,7 +188,9 @@ export function ActivityHistoryPage({ player }: { player: SelectedPlayer }) {
                         <button
                             key={d.instanceId}
                             className={`history-row ${completed ? "clear" : "dnf"}`}
+                            style={{ animationDelay: `${Math.max(0, i - batchStart) * 30}ms` }}
                             onClick={() => setPgcr({ instanceId: d.instanceId, name })}
+                            {...parallaxHandlers()}
                         >
                             {info?.image && (
                                 <span className="h-bg" style={{ backgroundImage: `url(${info.image})` }} />
@@ -176,9 +212,15 @@ export function ActivityHistoryPage({ player }: { player: SelectedPlayer }) {
                     )
                 })}
             </div>
-            {shown < entries.length && (
-                <button className="history-more" onClick={() => setShown(s => s + PAGE)}>
-                    Load more ({entries.length - shown} remaining)
+            {shown < filtered.length && (
+                <button
+                    className="history-more"
+                    onClick={() => {
+                        setBatchStart(shown)
+                        setShown(s => s + PAGE)
+                    }}
+                >
+                    Load more ({filtered.length - shown} remaining)
                 </button>
             )}
 

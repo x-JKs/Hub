@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { getActivityHistory, getAggregateActivityStats, getCharacters } from "../bungie/api"
 import { ActivityMode, AggregateHashStat } from "../bungie/types"
+import { loadRunsCache, saveRunsCache } from "../lib/runsCache"
 import { ActivityRun } from "../stats/compute"
 import { computeFreshFastest, computeFreshFlawless, FreshFastest, FreshFlawless } from "../stats/freshFastest"
 import { normalizeRuns } from "../stats/normalize"
@@ -40,11 +41,14 @@ const ALL_TIME = new Date(0)
 // merged into the all-time set so old data is preserved.
 const REFRESH_MS = 60_000
 const REFRESH_LOOKBACK_DAYS = 30
+// Warm starts re-fetch a window overlapping the cache's newest run, so late-
+// reported instances (e.g. runs on another character) can't slip through.
+const WARM_OVERLAP_DAYS = 7
 
 /** Fetch a player's full raid/dungeon history, lifetime aggregate, and (in a
  *  second pass) the fastest fresh full clear per activity — then keep it fresh
  *  with a light background refresh so new completions show without a restart. */
-export function useActivities(player: SelectedPlayer | null): LoadState & { refresh: () => void } {
+export function useActivities(player: SelectedPlayer | null): LoadState & { refresh: () => void; retry: () => void } {
     const [state, setState] = useState<LoadState>(EMPTY)
     const reqId = useRef(0)
     const allRunsRef = useRef<ActivityRun[]>([])
@@ -52,6 +56,9 @@ export function useActivities(player: SelectedPlayer | null): LoadState & { refr
     // Points at the current effect's refresh fn so the manual button can call it.
     const refreshRef = useRef<() => void>()
     const refresh = useCallback(() => refreshRef.current?.(), [])
+    // Bumped by retry() to re-run the whole load effect after a failed initial load.
+    const [loadNonce, setLoadNonce] = useState(0)
+    const retry = useCallback(() => setLoadNonce(n => n + 1), [])
 
     useEffect(() => {
         if (!player) {
@@ -138,10 +145,35 @@ export function useActivities(player: SelectedPlayer | null): LoadState & { refr
             setState(s => ({ ...s, freshLoading: false }))
         }
 
-        // Initial all-time load.
+        // Initial load. Warm start: the persisted all-time cache renders
+        // instantly and only a small recent window is refetched; cold start
+        // walks the full history as before.
         ;(async () => {
+            let warmStart = false
             try {
-                const { newRuns, aggregate } = await fetchData(ALL_TIME)
+                const cached = await loadRunsCache(player.membershipId)
+                if (myReq !== reqId.current) return
+                if (cached && cached.runs.length > 0) {
+                    warmStart = true
+                    mergeRuns(cached.runs)
+                    setState({
+                        runs: allRunsRef.current,
+                        aggregate: cached.aggregate,
+                        freshFastest: new Map(),
+                        freshFlawless: new Map(),
+                        loading: false,
+                        freshLoading: true,
+                        error: null
+                    })
+                }
+
+                const newest = allRunsRef.current[0]?.date.getTime()
+                const notBefore =
+                    warmStart && newest
+                        ? new Date(newest - WARM_OVERLAP_DAYS * 86_400_000)
+                        : ALL_TIME
+
+                const { newRuns, aggregate } = await fetchData(notBefore)
                 if (myReq !== reqId.current) return
                 mergeRuns(newRuns)
                 setState({
@@ -153,9 +185,18 @@ export function useActivities(player: SelectedPlayer | null): LoadState & { refr
                     freshLoading: true,
                     error: null
                 })
+                saveRunsCache(player.membershipId, allRunsRef.current, aggregate)
                 await runFreshPasses(allRunsRef.current)
             } catch (err) {
                 if (myReq !== reqId.current) return
+                if (warmStart) {
+                    // Cached data is already on screen — a failed network refresh
+                    // shouldn't blank the app. Keep it, fill fastest/flawless from
+                    // the local PGCR cache, and let the interval retry.
+                    console.warn("Background history refresh failed:", err)
+                    runFreshPasses(allRunsRef.current)
+                    return
+                }
                 setState({ ...EMPTY, error: err instanceof Error ? err.message : String(err) })
             }
         })()
@@ -171,7 +212,10 @@ export function useActivities(player: SelectedPlayer | null): LoadState & { refr
                 if (myReq !== reqId.current) return
                 const added = mergeRuns(newRuns)
                 setState(s => ({ ...s, runs: allRunsRef.current, aggregate }))
-                if (added) runFreshPasses(allRunsRef.current)
+                if (added) {
+                    saveRunsCache(player.membershipId, allRunsRef.current, aggregate)
+                    runFreshPasses(allRunsRef.current)
+                }
             } catch {
                 /* refresh failures are non-fatal — keep showing current data */
             }
@@ -192,7 +236,7 @@ export function useActivities(player: SelectedPlayer | null): LoadState & { refr
             window.removeEventListener("focus", doRefresh)
             reqId.current++
         }
-    }, [player?.membershipId, player?.membershipType])
+    }, [player?.membershipId, player?.membershipType, loadNonce])
 
-    return { ...state, refresh }
+    return { ...state, refresh, retry }
 }

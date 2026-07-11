@@ -1,12 +1,14 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
+import { motion } from "framer-motion"
 import { ActivityListPage, ActivityListSkeleton } from "./components/ActivityListPage"
 import { ApiKeySettings } from "./components/ApiKeySettings"
-import { Dashboard } from "./components/Dashboard"
+import { Dashboard, OverviewSkeleton } from "./components/Dashboard"
 import { LiveActivity } from "./components/LiveActivity"
 import { PeriodSelector } from "./components/PeriodSelector"
 import { PlayerSearch } from "./components/PlayerSearch"
 import { ActivityHistoryPage } from "./components/ActivityHistoryPage"
 import { UpdateModal } from "./components/UpdateModal"
+import { PgcrOverlay } from "./components/PgcrOverlay"
 import { hasApiKey } from "./bungie/client"
 import { searchPlayers } from "./bungie/api"
 import { SelectedPlayer, useActivities } from "./hooks/useActivities"
@@ -29,14 +31,38 @@ const TABS: { id: Tab; label: string }[] = [
 export default function App() {
     const [player, setPlayer] = useState<SelectedPlayer | null>(null)
     const [tab, setTab] = useState<Tab>("overview")
+    // Which way the tab content should slide: toward the tab you clicked.
+    const tabDirection = useRef(0)
+    const switchTab = (next: Tab) => {
+        const from = TABS.findIndex(t => t.id === tab)
+        const to = TABS.findIndex(t => t.id === next)
+        tabDirection.current = to === from ? 0 : to > from ? 1 : -1
+        setTab(next)
+    }
+    // Arrow keys move between tabs when the tab bar has focus.
+    const onTabKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return
+        e.preventDefault()
+        const from = TABS.findIndex(t => t.id === tab)
+        const to = (from + (e.key === "ArrowRight" ? 1 : -1) + TABS.length) % TABS.length
+        switchTab(TABS[to].id)
+        const buttons = e.currentTarget.querySelectorAll<HTMLButtonElement>("button")
+        buttons[to]?.focus()
+    }
     const [period, setPeriod] = useState<Period>(() => currentPeriod("month"))
+    // Clears overlay opened from a most-played card on the Overview.
+    const [mostPlayedClears, setMostPlayedClears] = useState<{
+        groupKey: string
+        activityName: string
+        splashUrl: string | null
+    } | null>(null)
     const [keyVersion, setKeyVersion] = useState(0)
     const [showSettings, setShowSettings] = useState(false)
     const [refreshing, setRefreshing] = useState(false)
 
     const keyPresent = useMemo(() => hasApiKey(), [keyVersion])
 
-    const { runs, aggregate, freshFastest, freshFlawless, freshLoading, loading, error, refresh } =
+    const { runs, aggregate, freshFastest, freshFlawless, freshLoading, loading, error, refresh, retry: retryLoad } =
         useActivities(keyPresent ? player : null)
     const stats = useMemo(() => computeStats(runs, period), [runs, period])
     const liveActivity = useLiveActivity(keyPresent ? player : null)
@@ -100,14 +126,17 @@ export default function App() {
 
         if (loading) {
             if (tab === "raids" || tab === "dungeons" || tab === "pantheon") return <ActivityListSkeleton />
+            return <OverviewSkeleton />
+        }
+        if (error)
             return (
-                <div className="state">
-                    <div className="spinner" />
-                    Loading {player!.displayName}&rsquo;s history&hellip;
+                <div className="state error">
+                    {error}
+                    <button className="state-retry" onClick={retryLoad}>
+                        Retry
+                    </button>
                 </div>
             )
-        }
-        if (error) return <div className="state error">{error}</div>
 
         if (tab === "raids" || tab === "dungeons" || tab === "pantheon")
             return (
@@ -129,8 +158,25 @@ export default function App() {
                     onShift={delta => setPeriod(p => shiftPeriod(p, delta))}
                     onReset={() => setPeriod(currentPeriod(period.granularity))}
                 />
-                <Dashboard stats={stats} period={period} />
-                <LiveActivity state={liveActivity} player={player} />
+                <Dashboard
+                    stats={stats}
+                    period={period}
+                    onMostPlayedOpen={mp => setMostPlayedClears({
+                        groupKey: mp.groupKey,
+                        activityName: mp.name,
+                        splashUrl: mp.splashUrl,
+                    })}
+                />
+                <div className="overview-live-row">
+                    <LiveActivity state={liveActivity} player={player} />
+                </div>
+                {mostPlayedClears && (
+                    <PgcrOverlay
+                        runs={runs}
+                        initialView={{ type: "clears", ...mostPlayedClears }}
+                        onClose={() => setMostPlayedClears(null)}
+                    />
+                )}
             </>
         )
     }
@@ -148,6 +194,7 @@ export default function App() {
                         <button
                             className={`icon-btn${refreshing ? " spinning" : ""}`}
                             title="Refresh stats"
+                            aria-label="Refresh stats"
                             onClick={() => {
                                 setRefreshing(true)
                                 refresh()
@@ -161,6 +208,7 @@ export default function App() {
                         <button
                             className="icon-btn"
                             title="Settings"
+                            aria-label="Settings"
                             onClick={() => setShowSettings(s => !s)}
                         >
                             &#9881;
@@ -175,14 +223,23 @@ export default function App() {
                 <ApiKeySettings onSaved={onKeySaved} onClose={() => setShowSettings(false)} onLogin={m => { applyMembership(m); setShowSettings(false) }} />
             ) : (
                 <>
-                    <div className="tabs">
+                    <div className="tabs" role="tablist" onKeyDown={onTabKeyDown}>
                         {TABS.map(t => (
                             <button
                                 key={t.id}
+                                role="tab"
+                                aria-selected={tab === t.id}
                                 className={tab === t.id ? "active" : ""}
-                                onClick={() => setTab(t.id)}
+                                onClick={() => switchTab(t.id)}
                             >
                                 {t.label}
+                                {tab === t.id && (
+                                    <motion.span
+                                        className="mo-tab-underline"
+                                        layoutId="tab-underline"
+                                        transition={{ type: "spring", stiffness: 500, damping: 38 }}
+                                    />
+                                )}
                             </button>
                         ))}
                         {player && <div className="tabs-player">{player.displayName}</div>}
@@ -191,7 +248,7 @@ export default function App() {
                     {!player ? (
                         <div className="state">Search for a Guardian above to see their stats.</div>
                     ) : (
-                        <TabTransition tabKey={tab}>
+                        <TabTransition tabKey={tab} direction={tabDirection.current}>
                             {renderContent()}
                         </TabTransition>
                     )}

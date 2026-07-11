@@ -17,10 +17,13 @@ import { hasApiKey } from "../bungie/client"
 
 type OvMode = "raids" | "dungeons" | "both"
 type OvPeriod = "daily" | "weekly"
+type OvPosition = "top-left" | "top-right" | "bottom-left" | "bottom-right"
 
 interface OvSettings {
     mode: OvMode
     period: OvPeriod
+    position: OvPosition
+    opacity: number
 }
 
 interface Notif {
@@ -45,6 +48,8 @@ function readSettings(): OvSettings {
     return {
         mode: (localStorage.getItem("overlay-mode") ?? "both") as OvMode,
         period: (localStorage.getItem("overlay-period") ?? "weekly") as OvPeriod,
+        position: (localStorage.getItem("overlay-position") ?? "top-left") as OvPosition,
+        opacity: Number(localStorage.getItem("overlay-opacity") ?? "1") || 1,
     }
 }
 
@@ -95,13 +100,21 @@ export function Overlay() {
 
     // Settings pushed from the main window
     useEffect(() => {
-        const unsub = window.electronWindow?.onOverlaySettings((s: { mode: string; period: string }) => {
+        const unsub = window.electronWindow?.onOverlaySettings(s => {
             setSettings({
                 mode: (s.mode as OvMode) ?? "both",
                 period: (s.period as OvPeriod) ?? "weekly",
+                position: (s.position as OvPosition) ?? "top-left",
+                opacity: typeof s.opacity === "number" && s.opacity > 0 ? s.opacity : 1,
             })
         })
         return () => { unsub?.() }
+    }, [])
+
+    // On startup, echo the stored settings through the main process so it can
+    // place the overlay window at the configured corner.
+    useEffect(() => {
+        window.electronWindow?.sendOverlaySettings(readSettings())
     }, [])
 
     // Game-focus signal — only used to refresh the timer immediately when the
@@ -344,24 +357,36 @@ export function Overlay() {
         : mode === "dungeons" ? dungeonClears
         : raidClears + dungeonClears
 
+    // Wrapper handles the configured corner (content alignment inside the wide
+    // window — the window itself is moved by the main process) and opacity.
+    const wrapStyle: React.CSSProperties = {
+        display: "flex",
+        justifyContent: settings.position.endsWith("right") ? "flex-end" : "flex-start",
+        opacity: settings.opacity,
+    }
+
     if (notif) {
         return (
-            <div className={`ov ov-notif${notifShown ? " ov--in" : ""}`}>
-                <div className="ov-notif-title">{notif.name}</div>
-                <div className="ov-notif-time">
-                    <span className="ov-notif-dot" />
-                    {notif.time}
+            <div style={wrapStyle}>
+                <div className={`ov ov-notif${notifShown ? " ov--in" : ""}`}>
+                    <div className="ov-notif-title">{notif.name}</div>
+                    <div className="ov-notif-time">
+                        <span className="ov-notif-dot" />
+                        {notif.time}
+                    </div>
                 </div>
             </div>
         )
     }
 
     return (
-        <div className={`ov${ready && shown ? " ov--in" : ""}`}>
-            {startMs != null && <span className="ov-timer">{formatTimer(elapsed)}</span>}
-            <div className="ov-clears">
-                <span className="ov-dot" />
-                <span className="ov-count">{count}</span>
+        <div style={wrapStyle}>
+            <div className={`ov${ready && shown ? " ov--in" : ""}`}>
+                {startMs != null && <span className="ov-timer">{formatTimer(elapsed)}</span>}
+                <div className="ov-clears">
+                    <span className="ov-dot" />
+                    <span className="ov-count">{count}</span>
+                </div>
             </div>
         </div>
     )

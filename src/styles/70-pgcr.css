@@ -1,0 +1,237 @@
+/* ==========================================================================
+   PGCR Overlay
+   ========================================================================== */
+
+.pgcr-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(6px);
+}
+
+.pgcr-overlay-inner {
+    width: 90vw;
+    max-width: 720px;
+    max-height: 85vh;
+    overflow-y: auto;
+    border-radius: var(--r-xl);
+    border: 1px solid var(--border);
+    background: var(--bg-1);
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.7);
+}
+
+.pgcr-overlay-inner::-webkit-scrollbar {
+    width: 6px;
+}
+
+.pgcr-overlay-inner::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 3px;
+}
+
+/* Keep the thumb's travel inside the straight edge — without this the
+   scrollbar runs through the panel's rounded corners into empty space. */
+.pgcr-overlay-inner::-webkit-scrollbar-track {
+    background: transparent;
+    margin-block: var(--r-xl);
+}
+
+/* --- Top bar --- */
+.pgcr-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--sp-3) var(--sp-4);
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--bg-1);
+    border-bottom: 1px solid var(--border);
+}
+
+.pgcr-back,
+.pgcr-close {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+    color: var(--text-2);
+    font-size: 13px;
+    padding: 5px 12px;
+    cursor: pointer;
+    transition: all var(--dur) var(--ease-out);
+}
+
+.pgcr-back:hover,
+.pgcr-close:hover {
+    color: var(--text-1);
+    border-color: var(--border-hover);
+    background: var(--bg-3);
+}
+
+.pgcr-close {
+    margin-left: auto;
+    font-size: 16px;
+    line-height: 1;
+    padding: 4px 10px;
+}
+
+/* --- Clears list header --- */
+.pgcr-header {
+    position: relative;
+    height: 100px;
+    display: flex;
+    align-items: flex-end;
+    overflow: hidden;
+}
+
+.pgcr-header-bg {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center 28%;
+    opacity: 0.4;
+}
+
+.pgcr-header-scrim {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(12, 12, 17, 0.3) 0%, rgba(12, 12, 17, 0.9) 100%);
+}
+
+.pgcr-header-text {
+    position: relative;
+    padding: var(--sp-3) var(--sp-5);
+}
+
+.pgcr-header-title {
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.8);
+}
+
+.pgcr-header-sub {
+    font-size: 12px;
+    color: var(--text-3);
+    margin-top: 2px;
+}
+
+/* --- Clears list table --- */
+.pgcr-clears-list {
+    padding: 0 var(--sp-4);
+}
+
+.pgcr-clears-head {
+    display: grid;
+    grid-template-columns: 1.6fr 0.8fr 0.6fr 0.8fr 0.5fr;
+    gap: var(--sp-2);
+    padding: var(--sp-3) var(--sp-3);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-3);
+    border-bottom: 1px solid var(--border);
+}
+
+.pgcr-clear-row {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1.6fr 0.8fr 0.6fr 0.8fr 0.5fr;
+    gap: var(--sp-2);
+    padding: var(--sp-3);
+    font-size: 13px;
+    width: 100%;
+    background: none;
+    border: none;
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+    color: var(--text-1);
+    cursor: pointer;
+    text-align: left;
+    font-variant-numeric: tabular-nums;
+    transition: background var(--dur) var(--ease-out);
+    font-family: var(--font-body);
+}
+
+.pgcr-clear-row:hover {
+    background: color-mix(in srgb, var(--text-1) 4%, transparent);
+}
+
+/* status-colored accent bar on clears (matches the History list) */
+.pgcr-clear-row::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 2px;
+    background: transparent;
+    transition: background var(--dur) var(--ease-out);
+}
+.pgcr-clear-row.clear::before { background: color-mix(in srgb, var(--success) 28%, transparent); }
+.pgcr-clear-row.clear:hover::before { background: color-mix(in srgb, var(--success) 65%, transparent); }
+
+.cl-date {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.cl-date small {
+    font-size: 10px;
+    color: var(--text-3);
+}
+
+.cl-dur,
+.cl-pc,
+.cl-kd {
+    font-variant-numeric: tabular-nums;
+    font-family: var(--font-display);
+    font-weight: 500;
+}
+
+.cl-status {
+    justify-self: start;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 3px 9px;
+    border-radius: var(--r-sm);
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--border);
+    color: var(--text-3);
+}
+
+.cl-status.ok {
+    color: var(--success);
+    border-color: color-mix(in srgb, var(--success) 35%, transparent);
+}
+.cl-status.bad {
+    color: color-mix(in srgb, var(--danger) 65%, var(--text-3));
+}
+
+/* --- Load more --- */
+.pgcr-load-more {
+    display: block;
+    width: calc(100% - var(--sp-8));
+    margin: var(--sp-4) auto;
+    padding: 10px;
+    border-radius: var(--r-md);
+    border: 1px solid var(--border);
+    background: var(--bg-2);
+    color: var(--text-2);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--dur) var(--ease-out);
+}
+
+.pgcr-load-more:hover {
+    background: var(--bg-3);
+    border-color: var(--border-hover);
+    color: var(--text-1);
+}

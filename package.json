@@ -1,7 +1,7 @@
 {
   "name": "hub",
   "private": true,
-  "version": "1.0.9",
+  "version": "1.0.11",
   "description": "Destiny 2 activity tracker & finder with a live in-game overlay",
   "author": "x-JKs",
   "type": "module",
@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "test": "vitest run",
     "preview": "vite preview",
     "electron:dev": "cross-env ELECTRON_DEV=1 electron .",
     "exe": "npm run build && node scripts/pack.mjs",
@@ -16,6 +17,7 @@
   },
   "dependencies": {
     "electron-updater": "^6.8.9",
+    "framer-motion": "^12.42.2",
     "koffi": "^3.0.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
@@ -31,7 +33,8 @@
     "png-to-ico": "^3.0.1",
     "rcedit": "^5.0.2",
     "typescript": "^5.6.3",
-    "vite": "^5.4.11"
+    "vite": "^5.4.11",
+    "vitest": "^4.1.10"
   },
   "build": {
     "appId": "com.hub.app",

@@ -69,6 +69,24 @@ npm run dist   # NSIS installer    -> release/Hub Setup <version>.exe   (run fro
 
 Released builds bake in the maintainer's Bungie key at build time; when building from source you supply your **own** key in `.env` (the file is git-ignored and never committed).
 
+## Releasing
+
+Pushing a `v*` tag runs [.github/workflows/release.yml](.github/workflows/release.yml): tests, renderer build (with the `VITE_BUNGIE_API_KEY` repo secret baked in), then `electron-builder` publishes the NSIS installer and auto-update feed to the GitHub release. [ci.yml](.github/workflows/ci.yml) typechecks, tests and builds every push/PR.
+
+## Code signing &amp; SmartScreen
+
+Unsigned installers trigger Windows SmartScreen ("Windows protected your PC") until the file builds download reputation — users must click **More info → Run anyway** once. To ship signed builds:
+
+1. Buy a code-signing certificate (an **OV certificate** from Sectigo/Certum/etc. is the affordable option; **EV** removes SmartScreen warnings immediately but costs more and requires a hardware token or cloud signing).
+2. For a `.pfx` file: base64-encode it and add two repo secrets — `CSC_LINK` (the base64) and `CSC_KEY_PASSWORD`. The release workflow already passes both to electron-builder, which signs the installer and the app exe automatically.
+3. For EV/cloud signing (Azure Trusted Signing etc.), see electron-builder's [code signing docs](https://www.electron.build/code-signing).
+
+Until then, the SmartScreen prompt is expected — mention the **More info → Run anyway** step next to the download link.
+
+## Debugging user reports
+
+Both processes append errors to `%APPDATA%/Hub/hub.log` (rotated at 512 KB). Ask users to attach it when reporting crashes.
+
 ## Stack
 
 - **Electron** + **Vite** + **React** + **TypeScript**

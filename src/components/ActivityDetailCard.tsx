@@ -1,5 +1,6 @@
 import { ActivityBreakdown } from "../stats/activityBreakdown"
 import { formatAvgDuration, formatTotalDuration } from "../stats/format"
+import { parallaxHandlers } from "../motion/hooks"
 
 const fmtNum = (n: number) => Math.round(n).toLocaleString()
 
@@ -34,10 +35,11 @@ function Badges({ data, onBadgeClick }: { data: ActivityBreakdown; onBadgeClick?
     if (badges.length === 0) return null
     return (
         <div className="detail-badges">
-            {badges.map(b => (
+            {badges.map((b, i) => (
                 <span
                     key={b}
                     className={`tag tag-${b.toLowerCase().replace(/\s+/g, "")}${onBadgeClick ? " tag-clickable" : ""}`}
+                    style={{ animationDelay: `${240 + i * 90}ms` }}
                     title={onBadgeClick ? `View ${b} clear` : undefined}
                     onClick={onBadgeClick ? e => { e.stopPropagation(); onBadgeClick(b) } : undefined}
                 >
@@ -62,7 +64,7 @@ export function ActivityDetailCard({
     onBadgeClick?: (badge: string) => void
 }) {
     return (
-        <div className={`detail ${onClick ? "detail-clickable" : ""}`} onClick={onClick}>
+        <div className={`detail ${onClick ? "detail-clickable" : ""}`} onClick={onClick} {...parallaxHandlers()}>
             <div className="detail-head">
                 {data.splashUrl && (
                     <div className="bg" style={{ backgroundImage: `url(${data.splashUrl})` }} />
@@ -146,11 +148,15 @@ export function ActivityDetailCard({
                         </span>
                     </div>
                     <div>
-                        <span className="k">Time played</span>
+                        <span className="k" title="Lifetime time in this activity, across all characters">
+                            Time played
+                        </span>
                         <span className="v">{formatTotalDuration(data.totalTimeSeconds)}</span>
                     </div>
                     <div>
-                        <span className="k">K/D</span>
+                        <span className="k" title="Lifetime kills ÷ deaths in this activity">
+                            K/D
+                        </span>
                         <span className="v">{data.kd.toFixed(2)}</span>
                     </div>
                 </div>

@@ -7,6 +7,11 @@
     --m-spring-standard: cubic-bezier(0.16, 1, 0.3, 1);
     --m-spring-gentle: cubic-bezier(0.34, 1.56, 0.64, 1);
     --m-spring-expressive: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+    /* Interaction-highlight tint: cool ice-white to match the hub's
+       blue-undertone surfaces. Amber (--ac) stays a data accent only. */
+    --hl: #aac4f0;
+    --hl-glow: color-mix(in srgb, var(--hl) 30%, transparent);
 }
 
 /* ==========================================================================
@@ -124,20 +129,44 @@ body {
     }
 }
 
-.mo-overlay .pgcr-overlay-inner {
-    animation: mo-panel-in 500ms cubic-bezier(0.16, 1, 0.3, 1) both;
-    animation-delay: 80ms;
+/* Panel entrance is a Framer spring from the click origin (see AnimatedOverlay).
+   The wrapper only needs compositing hints + to not disturb the flex centering. */
+.mo-overlay-panel {
+    position: relative;
+    display: flex;
+    max-width: 100%;
+    max-height: 100%;
+    align-items: center;
+    justify-content: center;
+    will-change: transform, opacity;
 }
 
-@keyframes mo-panel-in {
-    from {
-        opacity: 0;
-        transform: translateY(40px) scale(0.92);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
+/* Cursor-tracking ring light on the panel's own border — the segment of the
+   modal edge nearest the pointer lights up and glides with it. */
+.mo-overlay-panel::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    border-radius: var(--r-xl);
+    padding: 1px;
+    background: radial-gradient(
+        420px circle at calc((var(--px, 0) + 0.5) * 100%) calc((var(--py, 0) + 0.5) * 100%),
+        color-mix(in srgb, var(--hl) 70%, transparent),
+        color-mix(in srgb, var(--hl) 20%, transparent) 45%,
+        transparent 72%
+    );
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    opacity: 0;
+    transition: opacity 350ms var(--m-spring-standard);
+    pointer-events: none;
+}
+
+.mo-overlay-panel:hover::before {
+    opacity: 1;
 }
 
 /* Exit — JS adds .mo-overlay--exit, waits 250ms, then unmounts */
@@ -145,7 +174,7 @@ body {
     animation: mo-backdrop-out 250ms ease forwards;
 }
 
-.mo-overlay--exit .pgcr-overlay-inner {
+.mo-overlay--exit .mo-overlay-panel {
     animation: mo-panel-out 220ms ease forwards;
 }
 
@@ -161,34 +190,201 @@ body {
 }
 
 /* ==========================================================================
-   Tab Content Crossfade
+   Tab Content Transition (Framer-driven — see TabTransition)
    ========================================================================== */
 
-.mo-tab--out {
-    opacity: 0;
-    transition: opacity 120ms ease;
-}
-
-.mo-tab--in {
-    opacity: 0;
-}
-
-.mo-tab--visible {
-    opacity: 1;
-    transition: opacity 200ms cubic-bezier(0.16, 1, 0.3, 1);
+/* .mo-tab transform/filter is driven inline by Framer during transitions.
+   Width is pinned so the outgoing tab keeps its size when popLayout lifts it
+   out of flow (position: absolute) during the crossfade. */
+.mo-tab {
+    width: 100%;
 }
 
 /* ==========================================================================
-   Tab Button Transition
+   Tab Buttons + Animated Underline
+   A thin white line glides between tabs (shared-layout, layoutId="tab-underline")
+   and sits on the tab bar's bottom border, right under the label.
    ========================================================================== */
 
 .tabs button {
-    transition: color 280ms ease, border-bottom-color 280ms ease;
+    position: relative;
+    transition: color 280ms ease, transform 180ms var(--m-spring-snappy);
+}
+
+.tabs button:active {
+    transform: translateY(1px) scale(0.97);
+}
+
+.tabs button.active {
+    color: var(--text-1);
+}
+
+.mo-tab-underline {
+    position: absolute;
+    left: 12px;
+    right: 12px;
+    bottom: -1px;
+    height: 2px;
+    border-radius: 2px;
+    pointer-events: none;
+    background: linear-gradient(90deg, transparent, var(--text-1) 20%, var(--text-1) 80%, transparent);
+    box-shadow: 0 0 10px 1px var(--hl-glow);
 }
 
 /* ==========================================================================
-   Stat Bar
+   App Shell Reveal — topbar and tabs slide in once on launch
    ========================================================================== */
+
+.topbar {
+    animation: mo-shell-in 550ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.tabs {
+    animation: mo-shell-in 550ms cubic-bezier(0.16, 1, 0.3, 1) 80ms both;
+}
+
+@keyframes mo-shell-in {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ==========================================================================
+   Pointer Parallax
+   parallaxHandlers() writes --px/--py (-0.5..0.5) onto the card. The vars are
+   applied INSTANTLY (never transitioned — that made the spotlight trail the
+   pointer and burned main-thread time repainting gradients every frame).
+   Spotlights/rings read the vars directly and stick to the cursor; artwork
+   layers get their glide from a compositor-cheap `transform` transition.
+   ========================================================================== */
+
+@property --px {
+    syntax: "<number>";
+    inherits: true;
+    initial-value: 0;
+}
+
+@property --py {
+    syntax: "<number>";
+    inherits: true;
+    initial-value: 0;
+}
+
+/* NOTE: --px/--py are deliberately NOT transitioned. The spotlight must stick
+   to the cursor instantly — transitioning registered properties both trails
+   the pointer and forces continuous main-thread style/paint work (laggy). */
+
+/* ==========================================================================
+   Overview — Most Played cards: parallax art, lift, badge pop
+   ========================================================================== */
+
+.most {
+    transition: transform 250ms var(--m-spring-snappy),
+                box-shadow 250ms ease;
+}
+
+.most:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 36px rgba(0, 0, 0, 0.45);
+}
+
+/* Same oversize-and-clip trick as .detail-head .bg (the card itself clips). */
+.most .bg {
+    inset: -8px -12px;
+    transform: translate3d(calc(var(--px, 0) * 12px), calc(var(--py, 0) * 6px), 0);
+    will-change: transform;
+    /* transform transitions are compositor-driven (cheap) — this gives the art
+       its glide while the spotlight itself stays glued to the cursor. */
+    transition: opacity 400ms var(--m-spring-standard),
+                transform 300ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.most:hover .bg {
+    opacity: 0.6;
+}
+
+.most .badge {
+    animation: mo-badge-in 400ms cubic-bezier(0.175, 0.885, 0.32, 1.275) 250ms both;
+}
+
+.most-clickable {
+    cursor: pointer;
+}
+
+.most-clickable:active {
+    transform: translateY(0) scale(0.99);
+}
+
+/* Cursor-tracking ring light (same treatment as .detail): the border segment
+   nearest the cursor lights up and glides with it. Edge only — no interior
+   glow, so nothing floats in the card's empty space. */
+.most::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    border-radius: var(--r-lg);
+    padding: 1px;
+    background: radial-gradient(
+        170px circle at calc((var(--px, 0) + 0.5) * 100%) calc((var(--py, 0) + 0.5) * 100%),
+        var(--hl),
+        color-mix(in srgb, var(--hl) 30%, transparent) 45%,
+        transparent 72%
+    );
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    opacity: 0;
+    transition: opacity 300ms var(--m-spring-standard);
+    pointer-events: none;
+}
+
+.most:hover::before {
+    opacity: 1;
+}
+
+/* ==========================================================================
+   Stat Bar — the ring light tracks the cursor along the bar's edge
+   ========================================================================== */
+
+.stat-bar {
+    position: relative;
+}
+
+.stat-bar::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: var(--r-lg);
+    padding: 1px;
+    background: radial-gradient(
+        160px circle at calc((var(--px, 0) + 0.5) * 100%) calc((var(--py, 0) + 0.5) * 100%),
+        var(--hl),
+        color-mix(in srgb, var(--hl) 28%, transparent) 45%,
+        transparent 72%
+    );
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    opacity: 0;
+    transition: opacity 400ms var(--m-spring-standard);
+    pointer-events: none;
+}
+
+.stat-bar:hover::after {
+    opacity: 1;
+}
+
+/* Primary stat value stays the same white as every other number — the wider
+   cell and larger size are emphasis enough. */
 
 /* ==========================================================================
    Badge/Tag pop-in
@@ -242,20 +438,86 @@ body {
 }
 
 /* ==========================================================================
-   Clickable detail card press feedback
+   Activity Detail Card — parallax splash, cool ring light, elevation
    ========================================================================== */
 
+.detail {
+    position: relative;
+}
+
+/* Cursor-tracking ring light: a cool segment of the border lights up under
+   the mouse and glides with it (the --px/--py transition does the chasing).
+   The mask keeps only the 1px border ring of the radial gradient. */
+.detail::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    border-radius: var(--r-lg);
+    padding: 1px;
+    background: radial-gradient(
+        220px circle at calc((var(--px, 0) + 0.5) * 100%) calc((var(--py, 0) + 0.5) * 100%),
+        var(--hl),
+        color-mix(in srgb, var(--hl) 30%, transparent) 45%,
+        transparent 72%
+    );
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    opacity: 0;
+    transition: opacity 300ms var(--m-spring-standard);
+    pointer-events: none;
+}
+
+.detail:hover::before {
+    opacity: 1;
+}
+
+/* Light sweep across the splash art on hover-in. */
+.detail-head::after {
+    content: "";
+    position: absolute;
+    inset: -20% -10%;
+    background: linear-gradient(105deg, transparent 42%, rgba(255, 255, 255, 0.07) 50%, transparent 58%);
+    transform: translateX(-130%);
+    transition: transform 900ms cubic-bezier(0.16, 1, 0.3, 1);
+    pointer-events: none;
+}
+
+.detail:hover .detail-head::after {
+    transform: translateX(130%);
+}
+
+/* Splash art follows the pointer and settles back on leave. The layer is
+   oversized (negative inset) beyond the frame by more than it can ever
+   travel, and the head clips the bleed — so an image edge can never slide
+   into view, no matter where the cursor is. */
+.detail-head {
+    overflow: hidden;
+}
+
+.detail-head .bg {
+    inset: -10px -16px;
+    transform: translate3d(calc(var(--px, 0) * 14px), calc(var(--py, 0) * 8px), 0);
+    will-change: transform;
+    transition: transform 300ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 .detail-clickable {
-    transition: transform 180ms cubic-bezier(0.175, 0.885, 0.32, 1.1);
+    transition: transform 200ms cubic-bezier(0.175, 0.885, 0.32, 1.1),
+                box-shadow 250ms ease,
+                background 200ms var(--m-spring-standard);
     cursor: pointer;
 }
 
 .detail-clickable:hover {
-    transform: translateY(-1px);
+    transform: translateY(-2px);
+    box-shadow: 0 18px 44px rgba(0, 0, 0, 0.45);
 }
 
 .detail-clickable:active {
-    transform: scale(0.98);
+    transform: translateY(0) scale(0.99);
 }
 
 /* ==========================================================================
@@ -302,6 +564,33 @@ body {
 .pgcr-player-row:nth-child(6)  { animation-delay: 250ms; }
 .pgcr-player-row:nth-child(n+7) { animation-delay: 300ms; }
 
+/* PGCR weapon kill-share bars grow from the left after the row lands. */
+.pgcr-weapon-bar-fill {
+    transform-origin: left;
+    animation: mo-bar-grow 700ms cubic-bezier(0.16, 1, 0.3, 1) 250ms both;
+}
+
+@keyframes mo-bar-grow {
+    from { transform: scaleX(0); }
+    to { transform: scaleX(1); }
+}
+
+/* PGCR performance grid cells pop in with a cascade. */
+.pgcr-perf-cell {
+    animation: mo-badge-in 350ms cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+}
+
+.pgcr-perf-cell:nth-child(1) { animation-delay: 40ms; }
+.pgcr-perf-cell:nth-child(2) { animation-delay: 80ms; }
+.pgcr-perf-cell:nth-child(3) { animation-delay: 120ms; }
+.pgcr-perf-cell:nth-child(4) { animation-delay: 160ms; }
+.pgcr-perf-cell:nth-child(5) { animation-delay: 200ms; }
+.pgcr-perf-cell:nth-child(6) { animation-delay: 240ms; }
+.pgcr-perf-cell:nth-child(7) { animation-delay: 280ms; }
+.pgcr-perf-cell:nth-child(8) { animation-delay: 320ms; }
+.pgcr-perf-cell:nth-child(9) { animation-delay: 360ms; }
+.pgcr-perf-cell:nth-child(10) { animation-delay: 400ms; }
+
 /* PGCR Weapon List Stagger */
 .pgcr-weapon {
     animation: mo-row-in 400ms cubic-bezier(0.16, 1, 0.3, 1) both;
@@ -339,8 +628,35 @@ body {
    ========================================================================== */
 
 .live-card {
+    position: relative;
     transition: transform 200ms cubic-bezier(0.175, 0.885, 0.32, 1.1),
                 box-shadow 200ms ease;
+}
+
+.live-card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    border-radius: var(--r-lg);
+    padding: 1px;
+    background: radial-gradient(
+        140px circle at calc((var(--px, 0) + 0.5) * 100%) calc((var(--py, 0) + 0.5) * 100%),
+        var(--hl),
+        color-mix(in srgb, var(--hl) 28%, transparent) 45%,
+        transparent 72%
+    );
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    opacity: 0;
+    transition: opacity 300ms var(--m-spring-standard);
+    pointer-events: none;
+}
+
+.live-card:hover::after {
+    opacity: 1;
 }
 
 .live-card:hover {
@@ -390,12 +706,102 @@ body {
 }
 
 .pgcr-player-row {
+    position: relative;
     transition: background 180ms ease, transform 180ms ease;
 }
 
 .pgcr-player-row:hover {
     background: rgba(255, 255, 255, 0.03);
     transform: translateX(2px);
+}
+
+/* ==========================================================================
+   PGCR overlay — cursor-tracking lighting on rows, cells and cards
+   (same --px/--py mechanism as the main cards; ice tint, never amber)
+   ========================================================================== */
+
+.pgcr-weapon,
+.pgcr-perf-cell,
+.pgcr-player-header,
+.loadout-item,
+.loadout-subclass {
+    position: relative;
+}
+
+/* Soft spotlight wash that follows the cursor (::after is free on all of
+   these — .pgcr-clear-row's ::before stays the status accent bar). */
+.pgcr-clear-row::after,
+.pgcr-player-row::after,
+.pgcr-weapon::after,
+.pgcr-player-header::after,
+.loadout-item::after,
+.loadout-subclass::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: inherit;
+    background: radial-gradient(
+        200px circle at calc((var(--px, 0) + 0.5) * 100%) calc((var(--py, 0) + 0.5) * 100%),
+        color-mix(in srgb, var(--hl) 6%, transparent),
+        transparent 70%
+    );
+    opacity: 0;
+    transition: opacity 250ms var(--m-spring-standard);
+    pointer-events: none;
+}
+
+.pgcr-clear-row:hover::after,
+.pgcr-player-row:hover::after,
+.pgcr-weapon:hover::after,
+.pgcr-player-header:hover::after,
+.loadout-item:hover::after,
+.loadout-subclass:hover::after {
+    opacity: 1;
+}
+
+/* Performance cells are bordered tiles — they get the ring light too. */
+.pgcr-perf-cell::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: var(--r-md);
+    padding: 1px;
+    background: radial-gradient(
+        140px circle at calc((var(--px, 0) + 0.5) * 100%) calc((var(--py, 0) + 0.5) * 100%),
+        var(--hl),
+        color-mix(in srgb, var(--hl) 28%, transparent) 45%,
+        transparent 72%
+    );
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    opacity: 0;
+    transition: opacity 300ms var(--m-spring-standard);
+    pointer-events: none;
+}
+
+.pgcr-perf-cell::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: var(--r-md);
+    background: radial-gradient(
+        160px circle at calc((var(--px, 0) + 0.5) * 100%) calc((var(--py, 0) + 0.5) * 100%),
+        color-mix(in srgb, var(--hl) 7%, transparent),
+        transparent 70%
+    );
+    opacity: 0;
+    transition: opacity 300ms var(--m-spring-standard);
+    pointer-events: none;
+}
+
+.pgcr-perf-cell:hover::before,
+.pgcr-perf-cell:hover::after {
+    opacity: 1;
 }
 
 /* ==========================================================================
@@ -432,3 +838,229 @@ body {
 @keyframes mo-shimmer {
     100% { transform: translateX(100%); }
 }
+
+/* ==========================================================================
+   History — rows cascade in (per-batch delay set inline), art parallax
+   ========================================================================== */
+
+.history-row {
+    animation: mo-row-in 400ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Rows clip their own art bleed so shifted art never spills onto neighbours. */
+.history-row {
+    overflow: hidden;
+}
+
+.history-row .h-bg {
+    inset: -6px -14px;
+    transform: translate3d(calc(var(--px, 0) * 18px), calc(var(--py, 0) * 4px), 0);
+    will-change: transform;
+    transition: transform 300ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.history-row:hover .h-name {
+    color: color-mix(in srgb, var(--hl) 40%, var(--text-1));
+    transition: color 200ms var(--m-spring-standard);
+}
+
+/* The status accent bar down the left edge thickens and glows a touch —
+   together with the artwork brighten, that's the row's hover cue (no
+   interior glow: rows are dense, a light pool would sit on the text). */
+.history-row::before {
+    transition: background 200ms var(--m-spring-standard),
+                width 200ms var(--m-spring-standard),
+                box-shadow 200ms var(--m-spring-standard);
+}
+
+.history-row.clear:hover::before {
+    width: 3px;
+    box-shadow: 0 0 10px color-mix(in srgb, var(--success) 45%, transparent);
+}
+
+.history-more {
+    transition: background 200ms var(--m-spring-standard),
+                border-color 200ms var(--m-spring-standard),
+                color 200ms var(--m-spring-standard),
+                transform 150ms var(--m-spring-snappy);
+}
+
+.history-more:active {
+    transform: scale(0.985);
+}
+
+/* ==========================================================================
+   Live Activity — pinging status dot, equalizer waveform, breathing emblem
+   ========================================================================== */
+
+/* Radiating ping on the online dot (box-shadow spread — composited, cheap). */
+.live-status.online .status-dot {
+    position: relative;
+    animation: mo-dot-ping 2.4s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+@keyframes mo-dot-ping {
+    0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--success) 45%, transparent); }
+    60% { box-shadow: 0 0 0 7px transparent; }
+    100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+/* Tiny 3-bar equalizer next to the activity timer. */
+.live-eq {
+    display: inline-flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 10px;
+    margin-left: 4px;
+}
+
+.live-eq i {
+    width: 2.5px;
+    height: 100%;
+    border-radius: 1px;
+    background: var(--success);
+    transform-origin: bottom;
+    animation: mo-eq 1.1s ease-in-out infinite;
+}
+
+.live-eq i:nth-child(1) { animation-delay: 0ms; }
+.live-eq i:nth-child(2) { animation-delay: 180ms; }
+.live-eq i:nth-child(3) { animation-delay: 360ms; }
+
+@keyframes mo-eq {
+    0%, 100% { transform: scaleY(0.35); }
+    50% { transform: scaleY(1); }
+}
+
+/* Timer breathes very gently so the numbers feel live. */
+.live-timer {
+    animation: mo-timer-breathe 2s ease-in-out infinite;
+}
+
+@keyframes mo-timer-breathe {
+    0%, 100% { opacity: 0.75; }
+    50% { opacity: 1; }
+}
+
+/* Slow Ken Burns drift on the emblem banner. */
+.live-banner-img {
+    animation: mo-kenburns 14s ease-in-out infinite alternate;
+    will-change: transform;
+}
+
+@keyframes mo-kenburns {
+    from { transform: scale(1) translateX(0); }
+    to { transform: scale(1.06) translateX(-6px); }
+}
+
+/* Active character chip gets a quiet ice signature. */
+.live-char-chip.active {
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--hl) 40%, transparent),
+                0 0 14px -6px var(--hl-glow);
+}
+
+/* ==========================================================================
+   Search — dropdown pops from the input, results cascade
+   ========================================================================== */
+
+.search-results {
+    transform-origin: top center;
+    animation: mo-search-in 260ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes mo-search-in {
+    from {
+        opacity: 0;
+        transform: translateY(-6px) scale(0.97);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.search-results button {
+    animation: mo-row-in 300ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.search-results button:nth-child(1) { animation-delay: 30ms; }
+.search-results button:nth-child(2) { animation-delay: 60ms; }
+.search-results button:nth-child(3) { animation-delay: 90ms; }
+.search-results button:nth-child(4) { animation-delay: 120ms; }
+.search-results button:nth-child(5) { animation-delay: 150ms; }
+.search-results button:nth-child(n+6) { animation-delay: 180ms; }
+
+.search input {
+    transition: border-color 250ms var(--m-spring-standard),
+                box-shadow 250ms var(--m-spring-standard);
+}
+
+.search input:focus {
+    border-color: color-mix(in srgb, var(--hl) 40%, var(--border));
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--hl) 12%, transparent);
+}
+
+/* ==========================================================================
+   Loadout inspector — subclass plugs cascade in per group
+   ========================================================================== */
+
+.subclass-plug {
+    animation: mo-plug-in 320ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.subclass-group-items .subclass-plug:nth-child(1) { animation-delay: 120ms; }
+.subclass-group-items .subclass-plug:nth-child(2) { animation-delay: 170ms; }
+.subclass-group-items .subclass-plug:nth-child(3) { animation-delay: 220ms; }
+.subclass-group-items .subclass-plug:nth-child(4) { animation-delay: 270ms; }
+.subclass-group-items .subclass-plug:nth-child(5) { animation-delay: 320ms; }
+.subclass-group-items .subclass-plug:nth-child(n+6) { animation-delay: 370ms; }
+
+@keyframes mo-plug-in {
+    from {
+        opacity: 0;
+        transform: scale(0.85);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Mod icons pop in with a slight cascade too. */
+.loadout-mod {
+    animation: mo-plug-in 300ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.loadout-mods .loadout-mod:nth-child(1) { animation-delay: 100ms; }
+.loadout-mods .loadout-mod:nth-child(2) { animation-delay: 140ms; }
+.loadout-mods .loadout-mod:nth-child(3) { animation-delay: 180ms; }
+.loadout-mods .loadout-mod:nth-child(4) { animation-delay: 220ms; }
+.loadout-mods .loadout-mod:nth-child(n+5) { animation-delay: 260ms; }
+
+/* ==========================================================================
+   Buttons — universal press feedback for the small controls
+   ========================================================================== */
+
+.icon-btn:active:not(.spinning),
+.pgcr-back:active,
+.pgcr-close:active,
+.pgcr-load-more:active,
+.toggle button:active,
+.period-center .nav:active:not(:disabled) {
+    transform: scale(0.94);
+}
+
+.icon-btn,
+.pgcr-back,
+.pgcr-close,
+.pgcr-load-more,
+.toggle button,
+.period-center .nav {
+    transition: transform 140ms var(--m-spring-snappy),
+                background 200ms ease,
+                border-color 200ms ease,
+                color 200ms ease;
+}
+
+/* Reduced-motion kill deliberately omitted — desktop gaming app, animations
+   are core UX (the OS toggle would otherwise flatten every animation). */

@@ -1,0 +1,164 @@
+/* ==========================================================================
+   Overlay
+   ========================================================================== */
+
+body.overlay-mode,
+body.overlay-mode #root {
+    background: transparent !important;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+}
+
+.ov {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 12px;
+    background: rgba(6, 6, 10, 0.45);
+    border-radius: 8px;
+    font-family: var(--font-body);
+    color: #fff;
+    opacity: 0;
+    transition: opacity 400ms ease;
+}
+
+.ov--in {
+    opacity: 1;
+}
+
+.ov-timer {
+    font-size: 14px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.ov-clears {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.ov-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #4ade80;
+    flex-shrink: 0;
+}
+
+.ov-count {
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
+}
+
+/* Completion notification */
+.ov-notif {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 3px;
+    padding: 9px 14px;
+    background: rgba(6, 6, 10, 0.62);
+}
+
+.ov-notif-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #fff;
+    white-space: nowrap;
+    /* The overlay window is sized wide enough that long activity names show in
+       full; the box itself scales to the name length (inline-flex content). */
+}
+
+.ov-notif-time {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.ov-notif-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #4ade80;
+    flex-shrink: 0;
+}
+
+/* Settings overlay toggle */
+.keypanel-toggle {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    font-size: 13px;
+    color: var(--text-1);
+    cursor: pointer;
+    margin-bottom: var(--sp-2);
+}
+
+.keypanel-toggle input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--ac);
+    cursor: pointer;
+}
+
+.keypanel-overlay-opts {
+    display: flex;
+    gap: var(--sp-2);
+    margin-top: var(--sp-1);
+}
+
+.keypanel-overlay-opts select {
+    padding: var(--sp-1) var(--sp-2);
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+    color: var(--text-1);
+    font-size: 12px;
+    cursor: pointer;
+}
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+
+@media (max-width: 880px) {
+    .stat-bar {
+        flex-wrap: wrap;
+    }
+    .stat-cell {
+        flex: 1 1 33%;
+    }
+    .most-grid {
+        grid-template-columns: 1fr;
+    }
+    .detail-body {
+        grid-template-columns: 1fr 1fr;
+    }
+    .search {
+        width: 200px;
+    }
+    .pgcr-body {
+        grid-template-columns: 1fr;
+    }
+    .pgcr-perf-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    .pgcr-clears-head,
+    .pgcr-clear-row {
+        grid-template-columns: 1.4fr 0.7fr 0.5fr 0.7fr 0.5fr;
+        font-size: 12px;
+    }
+}
+
+/* ==========================================================================
+   Reduced motion
+   ========================================================================== */
+
+/* reduced-motion kill removed â€” desktop gaming app, animations are core UX */

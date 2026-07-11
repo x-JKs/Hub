@@ -31,6 +31,20 @@ export function ApiKeySettings({ intro, onSaved, onClose, onLogin }: Props) {
     const [overlayOn, setOverlayOn] = useState(() => localStorage.getItem("overlay-enabled") === "true")
     const [overlayMode, setOverlayMode] = useState(() => localStorage.getItem("overlay-mode") ?? "both")
     const [overlayPeriod, setOverlayPeriod] = useState(() => localStorage.getItem("overlay-period") ?? "weekly")
+    const [overlayPos, setOverlayPos] = useState(() => localStorage.getItem("overlay-position") ?? "top-left")
+    const [overlayOpacity, setOverlayOpacity] = useState(() => localStorage.getItem("overlay-opacity") ?? "1")
+
+    // Persist one overlay option and push the full settings object to the
+    // overlay window (which also lets the main process reposition it).
+    const pushOverlay = (patch: Partial<{ mode: string; period: string; position: string; opacity: string }>) => {
+        const next = {
+            mode: patch.mode ?? overlayMode,
+            period: patch.period ?? overlayPeriod,
+            position: patch.position ?? overlayPos,
+            opacity: Number(patch.opacity ?? overlayOpacity) || 1,
+        }
+        window.electronWindow?.sendOverlaySettings(next)
+    }
 
     function save() {
         if (!hasBuiltinApiKey()) setApiKey(apiKey)
@@ -186,7 +200,7 @@ export function ApiKeySettings({ intro, onSaved, onClose, onLogin }: Props) {
                                     const v = e.target.value
                                     setOverlayMode(v)
                                     localStorage.setItem("overlay-mode", v)
-                                    window.electronWindow?.sendOverlaySettings({ mode: v, period: overlayPeriod })
+                                    pushOverlay({ mode: v })
                                 }}
                             >
                                 <option value="both">Raids &amp; Dungeons</option>
@@ -201,11 +215,43 @@ export function ApiKeySettings({ intro, onSaved, onClose, onLogin }: Props) {
                                     const v = e.target.value
                                     setOverlayPeriod(v)
                                     localStorage.setItem("overlay-period", v)
-                                    window.electronWindow?.sendOverlaySettings({ mode: overlayMode, period: v })
+                                    pushOverlay({ period: v })
                                 }}
                             >
                                 <option value="weekly">Weekly reset</option>
                                 <option value="daily">Daily reset</option>
+                            </select>
+                        </div>
+                        <div className="keypanel-row">
+                            <select
+                                value={overlayPos}
+                                onChange={e => {
+                                    const v = e.target.value
+                                    setOverlayPos(v)
+                                    localStorage.setItem("overlay-position", v)
+                                    pushOverlay({ position: v })
+                                }}
+                            >
+                                <option value="top-left">Top left</option>
+                                <option value="top-right">Top right</option>
+                                <option value="bottom-left">Bottom left</option>
+                                <option value="bottom-right">Bottom right</option>
+                            </select>
+                        </div>
+                        <div className="keypanel-row">
+                            <select
+                                value={overlayOpacity}
+                                onChange={e => {
+                                    const v = e.target.value
+                                    setOverlayOpacity(v)
+                                    localStorage.setItem("overlay-opacity", v)
+                                    pushOverlay({ opacity: v })
+                                }}
+                            >
+                                <option value="1">Opacity 100%</option>
+                                <option value="0.85">Opacity 85%</option>
+                                <option value="0.7">Opacity 70%</option>
+                                <option value="0.55">Opacity 55%</option>
                             </select>
                         </div>
                     </div>

@@ -7,6 +7,7 @@ import type { ActivityRun } from "../stats/compute"
 import { formatAvgDuration } from "../stats/format"
 import { dungeonByHash } from "../manifest/dungeons"
 import { AnimatedOverlay } from "../motion/components"
+import { parallaxHandlers } from "../motion/hooks"
 
 // ---------------------------------------------------------------------------
 // Types
@@ -163,7 +164,7 @@ function ClearsList({
     return (
         <div className="pgcr-panel">
             <div className="pgcr-topbar">
-                <button className="pgcr-close" onClick={onClose}>&times;</button>
+                <button className="pgcr-close" onClick={onClose} aria-label="Close">&times;</button>
             </div>
             <div className="pgcr-header">
                 {splashUrl && <div className="pgcr-header-bg" style={{ backgroundImage: `url(${splashUrl})` }} />}
@@ -185,6 +186,7 @@ function ClearsList({
                     <button
                         key={r.instanceId}
                         className={`pgcr-clear-row ${r.completed ? "clear" : "dnf"}`}
+                        {...parallaxHandlers()}
                         onClick={() => onSelect(r.instanceId)}
                     >
                         <span className="cl-date">
@@ -281,7 +283,7 @@ function PgcrDetail({
         <div className="pgcr-panel">
             <div className="pgcr-topbar">
                 <button className="pgcr-back" onClick={onBack}>&larr; Back</button>
-                <button className="pgcr-close" onClick={onClose}>&times;</button>
+                <button className="pgcr-close" onClick={onClose} aria-label="Close">&times;</button>
             </div>
             <div className={`pgcr-detail-header${activityImage ? " has-art" : ""}`}>
                 {activityImage && (
@@ -320,6 +322,7 @@ function PgcrDetail({
                             <button
                                 key={e.characterId}
                                 className="pgcr-player-row"
+                                {...parallaxHandlers()}
                                 onClick={() => onPlayerClick(pgcr.entries.indexOf(e))}
                             >
                                 <PlayerEmblem entry={e} items={items} classIcons={classIcons} size={36} />
@@ -370,7 +373,7 @@ function PgcrDetail({
                             const pct = totalKills > 0 ? Math.round((w.kills / totalKills) * 100) : 0
                             const precPct = w.kills > 0 ? Math.round((w.precision / w.kills) * 100) : 0
                             return (
-                                <div key={w.hash} className="pgcr-weapon">
+                                <div key={w.hash} className="pgcr-weapon" {...parallaxHandlers()}>
                                     <div className="pgcr-weapon-icon">
                                         {w.def?.icon
                                             ? <img src={w.def.icon} alt="" />
@@ -438,10 +441,10 @@ function PlayerDetailView({
         <div className="pgcr-panel">
             <div className="pgcr-topbar">
                 <button className="pgcr-back" onClick={onBack}>&larr; Back</button>
-                <button className="pgcr-close" onClick={onClose}>&times;</button>
+                <button className="pgcr-close" onClick={onClose} aria-label="Close">&times;</button>
             </div>
 
-            <div className="pgcr-player-header" style={{ borderLeftColor: val(entry, "completed") === 1 ? "#4ade80" : "#e05252" }}>
+            <div className="pgcr-player-header" style={{ borderLeftColor: val(entry, "completed") === 1 ? "#4ade80" : "#e05252" }} {...parallaxHandlers()}>
                 <PlayerEmblem entry={entry} items={items} classIcons={classIcons} size={56} />
                 <div>
                     <div className="pgcr-player-header-name">{playerName(entry)}</div>
@@ -464,43 +467,43 @@ function PlayerDetailView({
 
             <div className="pgcr-section-label">Performance</div>
             <div className="pgcr-perf-grid">
-                <div className="pgcr-perf-cell">
+                <div className="pgcr-perf-cell" {...parallaxHandlers()}>
                     <div className="pgcr-perf-val">{formatAvgDuration(val(entry, "timePlayedSeconds"))}</div>
                     <div className="pgcr-perf-label">Time Played</div>
                 </div>
-                <div className="pgcr-perf-cell">
+                <div className="pgcr-perf-cell" {...parallaxHandlers()}>
                     <div className="pgcr-perf-val">{val(entry, "kills")}</div>
                     <div className="pgcr-perf-label">Kills</div>
                 </div>
-                <div className="pgcr-perf-cell">
+                <div className="pgcr-perf-cell" {...parallaxHandlers()}>
                     <div className="pgcr-perf-val">{val(entry, "deaths")}</div>
                     <div className="pgcr-perf-label">Deaths</div>
                 </div>
-                <div className="pgcr-perf-cell">
+                <div className="pgcr-perf-cell" {...parallaxHandlers()}>
                     <div className="pgcr-perf-val">{val(entry, "assists")}</div>
                     <div className="pgcr-perf-label">Assists</div>
                 </div>
-                <div className="pgcr-perf-cell">
+                <div className="pgcr-perf-cell" {...parallaxHandlers()}>
                     <div className="pgcr-perf-val">{dval(entry, "killsDeathsRatio")}</div>
                     <div className="pgcr-perf-label">K/D</div>
                 </div>
-                <div className="pgcr-perf-cell">
+                <div className="pgcr-perf-cell" {...parallaxHandlers()}>
                     <div className="pgcr-perf-val">{extVal("weaponKillsMelee")}</div>
                     <div className="pgcr-perf-label">Melee Kills</div>
                 </div>
-                <div className="pgcr-perf-cell">
+                <div className="pgcr-perf-cell" {...parallaxHandlers()}>
                     <div className="pgcr-perf-val">{extVal("weaponKillsGrenade")}</div>
                     <div className="pgcr-perf-label">Grenade Kills</div>
                 </div>
-                <div className="pgcr-perf-cell">
+                <div className="pgcr-perf-cell" {...parallaxHandlers()}>
                     <div className="pgcr-perf-val">{extVal("weaponKillsSuper")}</div>
                     <div className="pgcr-perf-label">Super Kills</div>
                 </div>
-                <div className="pgcr-perf-cell">
+                <div className="pgcr-perf-cell" {...parallaxHandlers()}>
                     <div className="pgcr-perf-val">{extVal("precisionKills")}</div>
                     <div className="pgcr-perf-label">Precision Kills</div>
                 </div>
-                <div className="pgcr-perf-cell">
+                <div className="pgcr-perf-cell" {...parallaxHandlers()}>
                     <div className="pgcr-perf-val">
                         {val(entry, "longestKillSpree") > 0
                             ? val(entry, "longestKillSpree")
@@ -518,7 +521,7 @@ function PlayerDetailView({
                             const pct = totalKills > 0 ? Math.round((w.kills / totalKills) * 100) : 0
                             const precPct = w.kills > 0 ? Math.round((w.precision / w.kills) * 100) : 0
                             return (
-                                <div key={w.hash} className="pgcr-weapon">
+                                <div key={w.hash} className="pgcr-weapon" {...parallaxHandlers()}>
                                     <div className="pgcr-weapon-icon">
                                         {w.def?.icon
                                             ? <img src={w.def.icon} alt="" />
@@ -649,11 +652,7 @@ export function PgcrOverlay({
         })()
     }, [pgcrInstanceId])
 
-    useEffect(() => {
-        const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose() }
-        window.addEventListener("keydown", handler)
-        return () => window.removeEventListener("keydown", handler)
-    }, [onClose])
+    // Escape is handled by AnimatedOverlay (with the exit animation).
 
     return (
         <AnimatedOverlay onClose={onClose}>
@@ -675,7 +674,7 @@ export function PgcrOverlay({
                         <div className="pgcr-panel">
                             <div className="pgcr-topbar">
                                 <button className="pgcr-back" onClick={pop}>&larr; Back</button>
-                                <button className="pgcr-close" onClick={onClose}>&times;</button>
+                                <button className="pgcr-close" onClick={onClose} aria-label="Close">&times;</button>
                             </div>
                             <div className="pgcr-loading">
                                 <div className="spinner" />
@@ -686,7 +685,7 @@ export function PgcrOverlay({
                         <div className="pgcr-panel">
                             <div className="pgcr-topbar">
                                 <button className="pgcr-back" onClick={pop}>&larr; Back</button>
-                                <button className="pgcr-close" onClick={onClose}>&times;</button>
+                                <button className="pgcr-close" onClick={onClose} aria-label="Close">&times;</button>
                             </div>
                             <div className="pgcr-loading pgcr-error-msg">{error}</div>
                         </div>

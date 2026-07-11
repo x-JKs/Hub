@@ -72,7 +72,7 @@ interface Classified {
 }
 
 /** Map a raw aggregate hash to its family for the given category, or null. */
-function classify(hash: number, category: Category): Classified | null {
+export function classify(hash: number, category: Category): Classified | null {
     if (category === "raid") {
         const raid = raidByHash(hash)
         if (!raid) return null

@@ -6,6 +6,7 @@ import type { ManifestItemDef } from "../bungie/types"
 import type { LiveActivityState, LiveMember } from "../hooks/useLiveActivity"
 import type { SelectedPlayer } from "../hooks/useActivities"
 import { AnimatedOverlay } from "../motion/components"
+import { parallaxHandlers } from "../motion/hooks"
 
 const BUCKET_LABELS: Record<number, string> = {
     3284755031: "Subclass",
@@ -99,7 +100,7 @@ export function LiveActivity({ state, player }: Props) {
         <div className="live-section">
             <div className="pgcr-section-label">Current Activity</div>
 
-            <button className="live-card" onClick={() => setInspectCharId(c.characterId)}>
+            <button className="live-card" onClick={() => setInspectCharId(c.characterId)} {...parallaxHandlers()}>
                 <div className="live-banner">
                     {state.emblemBgUrl && (
                         <img className="live-banner-img" src={state.emblemBgUrl} alt="" />
@@ -115,7 +116,12 @@ export function LiveActivity({ state, player }: Props) {
                                     ? state.activityName ?? "In Orbit"
                                     : "Offline"}
                                 {state.activityStarted && state.isOnline && (
-                                    <ElapsedTimer since={state.activityStarted} />
+                                    <>
+                                        <span className="live-eq" aria-hidden="true">
+                                            <i /><i /><i />
+                                        </span>
+                                        <ElapsedTimer since={state.activityStarted} />
+                                    </>
                                 )}
                             </div>
                         </div>
@@ -176,6 +182,7 @@ export function LiveActivity({ state, player }: Props) {
                         membershipType={player.membershipType}
                         membershipId={player.membershipId}
                         characterId={inspectCharId}
+                        characters={state.allCharacters}
                         displayName={player.displayName}
                         className={ch.className}
                         light={ch.light}
@@ -202,10 +209,18 @@ export function LiveActivity({ state, player }: Props) {
 // Loadout overlay — fetches equipment + sockets on mount
 // ---------------------------------------------------------------------------
 
-function CharacterLoadoutOverlay({
+interface CharBrief {
+    characterId: string
+    className: string
+    light: number
+    emblemPath: string
+}
+
+export function CharacterLoadoutOverlay({
     membershipType,
     membershipId,
     characterId,
+    characters,
     displayName,
     className,
     light,
@@ -214,6 +229,8 @@ function CharacterLoadoutOverlay({
     membershipType: number
     membershipId: string
     characterId?: string
+    /** When provided (and >1), a chip row lets you switch between characters. */
+    characters?: CharBrief[]
     displayName: string
     className: string
     light: number
@@ -222,12 +239,20 @@ function CharacterLoadoutOverlay({
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
     const [slots, setSlots] = useState<LoadoutSlot[]>([])
+    // Which character's loadout is showing. Starts at the passed one; kept in sync
+    // if the prop changes, and switchable via the chips below.
+    const [activeId, setActiveId] = useState(characterId)
+    useEffect(() => { setActiveId(characterId) }, [characterId])
+
+    const activeChar = characters?.find(c => c.characterId === activeId)
+    const headerClass = activeChar?.className ?? className
+    const headerLight = activeChar?.light ?? light
 
     async function load() {
         setLoading(true)
         setError(null)
         try {
-            const loadout = await getCharacterLoadout(membershipType, membershipId, characterId)
+            const loadout = await getCharacterLoadout(membershipType, membershipId, activeId)
 
             // Collect all hashes to resolve: item hashes + socket plug hashes
             const allHashes: number[] = []
@@ -267,21 +292,21 @@ function CharacterLoadoutOverlay({
         setLoading(false)
     }
 
-    useEffect(() => { load() }, [membershipId, characterId])
+    useEffect(() => { load() }, [membershipId, activeId])
 
     return (
         <AnimatedOverlay onClose={onClose}>
             <div className="pgcr-overlay-inner" onClick={e => e.stopPropagation()}>
                 <div className="pgcr-panel">
                     <div className="pgcr-topbar">
-                        <button className="pgcr-close" onClick={onClose}>&times;</button>
+                        <button className="pgcr-close" onClick={onClose} aria-label="Close">&times;</button>
                     </div>
 
                     <div className="live-loadout-header">
                         <div>
                             <div className="live-loadout-name">{displayName}</div>
                             <div className="live-loadout-class">
-                                {className}{light > 0 && ` · ${light}`}
+                                {headerClass}{headerLight > 0 && ` · ${headerLight}`}
                             </div>
                         </div>
                         <button
@@ -289,10 +314,28 @@ function CharacterLoadoutOverlay({
                             onClick={e => { e.stopPropagation(); load() }}
                             disabled={loading}
                             title="Refresh loadout"
+                            aria-label="Refresh loadout"
                         >
                             {loading ? "…" : "↻"}
                         </button>
                     </div>
+
+                    {characters && characters.length > 1 && (
+                        <div className="live-chars loadout-charswitch">
+                            {characters.map(ch => (
+                                <button
+                                    key={ch.characterId}
+                                    className={`live-char-chip ${ch.characterId === activeId ? "active" : ""}`}
+                                    onClick={() => setActiveId(ch.characterId)}
+                                    title={`Inspect ${ch.className} loadout`}
+                                >
+                                    <img src={bungieAsset(ch.emblemPath) ?? ""} alt="" className="live-char-emblem" />
+                                    <span>{ch.className}</span>
+                                    <span className="live-char-light">{ch.light}</span>
+                                </button>
+                            ))}
+                        </div>
+                    )}
 
                     {loading && slots.length === 0 ? (
                         <div className="pgcr-loading">
@@ -301,7 +344,7 @@ function CharacterLoadoutOverlay({
                     ) : error ? (
                         <div className="pgcr-loading pgcr-error-msg">{error}</div>
                     ) : (
-                        <div className="loadout-list">
+                        <div className="loadout-list" key={activeId ?? "single"}>
                             {slots.map(slot =>
                                 slot.bucket === 3284755031
                                     ? <SubclassBlock key={slot.bucket} slot={slot} />
@@ -328,7 +371,7 @@ interface LoadoutSlot {
 
 function EquipmentRow({ slot }: { slot: LoadoutSlot }) {
     return (
-        <div className="loadout-item">
+        <div className="loadout-item" {...parallaxHandlers()}>
             <div className="loadout-item-main">
                 <div className="pgcr-weapon-icon">
                     {slot.item.icon
@@ -389,7 +432,7 @@ function SubclassBlock({ slot }: { slot: LoadoutSlot }) {
     }
 
     return (
-        <div className="loadout-subclass">
+        <div className="loadout-subclass" {...parallaxHandlers()}>
             <div className="loadout-item-main">
                 <div className="pgcr-weapon-icon">
                     {slot.item.icon

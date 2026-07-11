@@ -1,14 +1,43 @@
 // Electron main process. Creates the window and loads the built Vite app
 // (or the dev server when ELECTRON_DEV is set).
 
-const { app, BrowserWindow, ipcMain, nativeImage, session, shell } = require("electron")
+const { app, BrowserWindow, ipcMain, nativeImage, screen, session, shell } = require("electron")
 const { execSync, spawn } = require("child_process")
+const fs = require("fs")
 const http = require("http")
 const path = require("path")
 const packetTimer = require("./packetTimer.cjs")
 
 const isDev = !!process.env.ELECTRON_DEV
 const PROTOCOL = "destiny-tracker"
+
+// ---------------------------------------------------------------------------
+// File logging — errors from the main process and renderer append to
+// userData/hub.log so user reports can actually be debugged. Size-capped by
+// rotating to hub.log.old.
+// ---------------------------------------------------------------------------
+
+const LOG_MAX_BYTES = 512 * 1024
+
+function logError(source, message) {
+    try {
+        const file = path.join(app.getPath("userData"), "hub.log")
+        try {
+            if (fs.statSync(file).size > LOG_MAX_BYTES) fs.renameSync(file, `${file}.old`)
+        } catch { /* no log yet / rotate failed — append anyway */ }
+        fs.appendFileSync(file, `[${new Date().toISOString()}] [${source}] ${message}\n`)
+    } catch { /* logging must never take the app down */ }
+}
+
+process.on("uncaughtException", err => {
+    console.error("[main] uncaught:", err)
+    logError("main", err?.stack ?? String(err))
+})
+process.on("unhandledRejection", reason => {
+    console.error("[main] unhandled rejection:", reason)
+    logError("main", `unhandledRejection: ${reason?.stack ?? String(reason)}`)
+})
+ipcMain.on("log:error", (_event, message) => logError("renderer", String(message).slice(0, 8000)))
 
 // Auto-updater. Only bundled in official electron-builder releases (which also
 // ship the app-update.yml that points at the GitHub releases feed). The require
@@ -208,10 +237,54 @@ function startBridgeServer() {
 // Window
 // ---------------------------------------------------------------------------
 
+// Remember size/position (and maximized state) between launches.
+const windowStatePath = () => path.join(app.getPath("userData"), "window-state.json")
+
+function loadWindowState() {
+    try {
+        const s = JSON.parse(fs.readFileSync(windowStatePath(), "utf8"))
+        if (!s || !s.bounds) return null
+        // Only restore bounds that are still (mostly) on a connected display —
+        // otherwise a detached monitor would strand the window off-screen.
+        const visible = screen.getAllDisplays().some(d => {
+            const a = d.workArea
+            return (
+                s.bounds.x < a.x + a.width - 100 &&
+                s.bounds.x + s.bounds.width > a.x + 100 &&
+                s.bounds.y >= a.y - 20 &&
+                s.bounds.y < a.y + a.height - 100
+            )
+        })
+        return visible ? s : { maximized: !!s.maximized, bounds: null }
+    } catch {
+        return null
+    }
+}
+
+function saveWindowState() {
+    if (!mainWindow || mainWindow.isDestroyed()) return
+    try {
+        fs.writeFileSync(
+            windowStatePath(),
+            JSON.stringify({
+                maximized: mainWindow.isMaximized(),
+                // getNormalBounds = the un-maximized bounds, so restoring from a
+                // maximized session comes back to a sensible windowed size.
+                bounds: mainWindow.getNormalBounds(),
+            })
+        )
+    } catch {
+        /* non-critical */
+    }
+}
+
 function createWindow() {
+    const saved = loadWindowState()
     mainWindow = new BrowserWindow({
-        width: 1100,
-        height: 760,
+        width: saved?.bounds?.width ?? 1100,
+        height: saved?.bounds?.height ?? 760,
+        x: saved?.bounds?.x,
+        y: saved?.bounds?.y,
         minWidth: 760,
         minHeight: 560,
         backgroundColor: "#06060a",
@@ -253,6 +326,9 @@ function createWindow() {
         mainWindow.loadFile(path.join(__dirname, "..", "dist", "index.html"))
     }
 
+    if (saved?.maximized) mainWindow.maximize()
+
+    mainWindow.on("close", saveWindowState)
     mainWindow.on("closed", () => {
         mainWindow = null
         if (overlayWindow && !overlayWindow.isDestroyed()) overlayWindow.close()
@@ -421,6 +497,9 @@ function createOverlay() {
 // Packet-based timer: start the capture and push instance state to the overlay.
 let packetStateInterval = null
 function startPacketTimer() {
+    // Only ever sniff the port while the overlay is actually active — if there's
+    // no overlay window (overlay disabled), never open WinDivert at all.
+    if (!overlayWindow || overlayWindow.isDestroyed()) return
     packetTimer.start() // returns false (and stays available:false) without admin
     clearInterval(packetStateInterval)
     packetStateInterval = setInterval(() => {
@@ -435,12 +514,33 @@ function stopPacketTimer() {
     packetTimer.stop()
 }
 
+// Move the overlay window to the configured screen corner. Uses the display's
+// full bounds (not workArea): the overlay floats above a fullscreen game, so
+// the taskbar strip shouldn't push it around.
+const OVERLAY_W = 900
+const OVERLAY_H = 90
+const OVERLAY_MARGIN = 8
+
+function positionOverlay(position) {
+    if (!overlayWindow || overlayWindow.isDestroyed()) return
+    const b = screen.getPrimaryDisplay().bounds
+    const pos = typeof position === "string" ? position : "top-left"
+    const x = pos.endsWith("right")
+        ? b.x + b.width - OVERLAY_W - OVERLAY_MARGIN
+        : b.x + OVERLAY_MARGIN
+    const y = pos.startsWith("bottom")
+        ? b.y + b.height - OVERLAY_H - OVERLAY_MARGIN
+        : b.y + OVERLAY_MARGIN
+    overlayWindow.setPosition(x, y)
+}
+
 ipcMain.on("overlay:show", () => createOverlay())
 ipcMain.on("overlay:hide", () => {
     if (overlayWindow && !overlayWindow.isDestroyed()) overlayWindow.close()
     stopForegroundWatch()
 })
 ipcMain.on("overlay:settings", (_event, settings) => {
+    if (settings?.position) positionOverlay(settings.position)
     if (overlayWindow && !overlayWindow.isDestroyed()) {
         overlayWindow.webContents.send("overlay:settings", settings)
     }

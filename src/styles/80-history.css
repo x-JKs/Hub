@@ -1,0 +1,804 @@
+/* ==========================================================================
+   Activity History page
+   ========================================================================== */
+.history-page { padding: var(--sp-4) 0; }
+
+.history-sub {
+    padding: 0 var(--sp-1) var(--sp-3);
+    font-size: 12px;
+    color: var(--text-3);
+    letter-spacing: 0.02em;
+}
+
+/* history count + clear/wipe filter share a row */
+.history-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-3);
+}
+
+/* sort control above detail lists */
+.list-controls {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--sp-2);
+    margin-bottom: var(--sp-3);
+    padding: 0 var(--sp-1);
+}
+
+.list-controls-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-3);
+}
+.history-sub b { color: var(--text-1); font-weight: 700; }
+
+.history-list {
+    background: transparent;
+    border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+    border-radius: var(--r-lg);
+    overflow: hidden;
+}
+
+.history-head,
+.history-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 0.9fr 0.7fr 0.9fr 0.85fr;
+    gap: var(--sp-3);
+    align-items: center;
+    padding: var(--sp-3) var(--sp-4);
+}
+
+.history-head {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-3);
+    border-bottom: 1px solid var(--border);
+}
+
+.history-row {
+    position: relative;
+    width: 100%;
+    text-align: left;
+    font-size: 13px;
+    background: none;
+    border: none;
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 45%, transparent);
+    color: var(--text-1);
+    cursor: pointer;
+    font-variant-numeric: tabular-nums;
+    transition: background var(--dur) var(--ease-out);
+}
+.history-row:last-child { border-bottom: none; }
+.history-row:hover { background: color-mix(in srgb, var(--text-1) 4%, transparent); }
+
+/* status-colored accent bar down the left edge, brightens on hover */
+.history-row::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 2px;
+    z-index: 2;
+    background: transparent;
+    transition: background var(--dur) var(--ease-out);
+}
+.history-row.clear::before { background: color-mix(in srgb, var(--success) 28%, transparent); }
+.history-row.clear:hover::before { background: color-mix(in srgb, var(--success) 65%, transparent); }
+/* DNF rows stay plain â€” no accent bar â€” so clears are what draw the eye. */
+
+/* faint activity banner art behind each row (edge-faded, kept readable) */
+.h-bg {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background-size: cover;
+    background-position: center 35%;
+    opacity: 0.14;
+    pointer-events: none;
+    transition: opacity var(--dur) var(--ease-out);
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 28%, #000 78%, transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 28%, #000 78%, transparent);
+}
+.history-row:hover .h-bg { opacity: 0.22; }
+.history-row > span:not(.h-bg) { position: relative; z-index: 1; }
+
+.h-name {
+    font-weight: 600;
+    color: var(--text-1);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.h-date {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    font-size: 12px;
+    color: var(--text-2);
+}
+.h-date small { color: var(--text-3); font-size: 10px; }
+
+.h-dur, .h-pc, .h-kd { color: var(--text-2); white-space: nowrap; }
+
+/* status tag â€” matches the card badges (quiet dark tag, colored text) */
+.h-status {
+    justify-self: start;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 3px 9px;
+    border-radius: var(--r-sm);
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--border);
+    color: var(--text-3);
+}
+.h-status.ok {
+    color: var(--success);
+    border-color: color-mix(in srgb, var(--success) 35%, transparent);
+}
+.h-status.bad {
+    color: color-mix(in srgb, var(--danger) 65%, var(--text-3));
+}
+
+.history-more {
+    display: block;
+    width: 100%;
+    margin-top: var(--sp-3);
+    padding: 11px;
+    border-radius: var(--r-md);
+    border: 1px solid var(--border);
+    background: var(--bg-2);
+    color: var(--text-2);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background var(--dur) var(--ease-out), border-color var(--dur) var(--ease-out), color var(--dur) var(--ease-out);
+}
+.history-more:hover { background: var(--bg-3); border-color: var(--border-hover); color: var(--text-1); }
+
+/* ==========================================================================
+   Trends (overview charts)
+   ========================================================================== */
+
+.trends-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-3);
+    margin-top: var(--sp-5);
+    align-items: stretch;
+}
+
+.trend-card {
+    position: relative;
+    flex: 1 1 380px;
+    min-width: 0;
+    padding: var(--sp-4);
+    background: var(--bg-2);
+    border-radius: var(--r-lg);
+}
+
+.trend-title {
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+}
+
+.trend-sub {
+    font-size: 11px;
+    color: var(--text-3);
+    margin: 1px 0 var(--sp-3);
+}
+
+.trend-scroll {
+    overflow-x: auto;
+    padding-bottom: 2px;
+}
+
+.trend-chart {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+.trend-legend {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    margin-top: var(--sp-2);
+    font-size: 10px;
+    color: var(--text-3);
+}
+
+.trend-legend span { margin: 0 3px; }
+
+.trend-legend i {
+    width: 10px;
+    height: 10px;
+    border-radius: 2.5px;
+}
+
+.chart-tip {
+    position: absolute;
+    z-index: 5;
+    padding: 4px 9px;
+    background: var(--bg-0);
+    border: 1px solid var(--border-hover);
+    border-radius: var(--r-sm);
+    font-size: 11px;
+    color: var(--text-2);
+    white-space: nowrap;
+    pointer-events: none;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+}
+
+.chart-tip b {
+    color: var(--text-1);
+    font-variant-numeric: tabular-nums;
+}
+
+/* ==========================================================================
+   Player Lookup (overview)
+   ========================================================================== */
+/* Current Activity + Player Lookup share a row: live on the left, lookup fills
+   the free space on the right; they stack on narrow windows. */
+.overview-live-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-5);
+    align-items: flex-start;
+    margin-top: var(--sp-5);
+}
+/* Live section hugs the 480px emblem card (don't grow past it), so the lookup
+   sits right beside the emblem instead of being pushed to the far right. */
+.overview-live-row .live-section { flex: 0 1 480px; min-width: 0; }
+.overview-live-row .lookup-section { flex: 0 1 320px; margin-top: 0; }
+
+.lookup-section { margin-top: var(--sp-6); }
+
+.lookup-hint {
+    margin: 2px 0 var(--sp-3);
+    font-size: 13px;
+    color: var(--text-3);
+}
+
+.lookup-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-3);
+}
+
+.lookup-head .pgcr-section-label {
+    margin-bottom: 0;
+    padding: 0;
+}
+
+.lookup-head .toggle button:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+/* Side-by-side lifetime comparison */
+.compare-table {
+    margin-top: var(--sp-4);
+    border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+    border-radius: var(--r-md);
+    overflow: hidden;
+}
+
+.compare-row {
+    display: grid;
+    grid-template-columns: 1.6fr 1fr 1fr;
+    gap: var(--sp-2);
+    align-items: center;
+    padding: var(--sp-2) var(--sp-3);
+    font-size: 13px;
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 45%, transparent);
+}
+
+.compare-row:last-child { border-bottom: none; }
+
+.compare-row > span:nth-child(2),
+.compare-row > span:nth-child(3) {
+    text-align: right;
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.compare-head {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-3);
+    background: var(--bg-2);
+}
+
+.compare-head > span {
+    font-family: var(--font-body) !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.compare-totals {
+    background: color-mix(in srgb, var(--text-1) 3%, transparent);
+}
+
+.compare-name {
+    color: var(--text-2);
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.compare-row small {
+    display: block;
+    font-family: var(--font-body);
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--text-3);
+}
+
+.compare-row .win {
+    color: var(--ac);
+}
+
+.compare-row .win small {
+    color: color-mix(in srgb, var(--ac) 55%, var(--text-3));
+}
+
+.lookup-search { max-width: 440px; }
+.lookup-search .search { width: 100%; }
+.lookup-search .search input { width: 100%; }
+
+.lookup-status {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    margin-top: var(--sp-3);
+    font-size: 13px;
+    color: var(--text-2);
+}
+.lookup-error { color: var(--danger); }
+
+/* character switcher inside the loadout overlay */
+.loadout-charswitch {
+    padding: 0 var(--sp-5);
+    margin: 0 0 var(--sp-3);
+}
+
+/* --- PGCR detail header --- */
+.pgcr-detail-header {
+    position: relative;
+    padding: var(--sp-4) var(--sp-5);
+    border-bottom: 1px solid var(--border);
+    overflow: hidden;
+}
+.pgcr-detail-header.has-art { padding-top: var(--sp-6); }
+
+.pgcr-detail-bg {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center 30%;
+    opacity: 0.35;
+}
+.pgcr-detail-scrim {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(12, 12, 17, 0.35) 0%, rgba(12, 12, 17, 0.92) 100%);
+}
+.pgcr-detail-headtext { position: relative; }
+
+.pgcr-detail-name {
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+.pgcr-detail-date {
+    font-size: 12px;
+    color: var(--text-3);
+    margin-top: 2px;
+}
+
+.pgcr-detail-dur {
+    color: var(--ac);
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+}
+
+/* --- PGCR body two-column layout --- */
+.pgcr-body {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--sp-5);
+    padding: var(--sp-4) var(--sp-5);
+}
+
+.pgcr-section-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-3);
+    margin-bottom: var(--sp-3);
+    padding: 0 var(--sp-5);
+}
+
+.pgcr-body .pgcr-section-label {
+    padding: 0;
+}
+
+/* --- Player rows --- */
+.pgcr-player-row {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    width: 100%;
+    padding: var(--sp-2) var(--sp-3);
+    border-radius: var(--r-md);
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    margin-bottom: var(--sp-2);
+    cursor: pointer;
+    transition: all var(--dur) var(--ease-out);
+    text-align: left;
+    color: var(--text-1);
+    font-family: var(--font-body);
+}
+
+.pgcr-player-row:hover {
+    border-color: var(--border-hover);
+    background: var(--bg-3);
+}
+
+/* --- Emblem + class icon composite --- */
+.pgcr-emblem-wrap {
+    position: relative;
+    flex: none;
+    border-radius: var(--r-sm);
+    overflow: visible;
+}
+
+.pgcr-emblem-img {
+    display: block;
+    border-radius: var(--r-sm);
+    object-fit: cover;
+}
+
+.pgcr-emblem-fallback {
+    border-radius: var(--r-sm);
+    display: grid;
+    place-items: center;
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+}
+
+.pgcr-class-badge {
+    position: absolute;
+    bottom: -3px;
+    right: -3px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--bg-1);
+    border: 1.5px solid var(--bg-1);
+    filter: brightness(1.2);
+}
+
+.pgcr-player-info {
+    min-width: 0;
+}
+
+.pgcr-player-name {
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.pgcr-player-code {
+    color: var(--text-3);
+    font-weight: 400;
+    font-size: 11px;
+    margin-left: 2px;
+}
+
+.pgcr-dnf {
+    display: inline-block;
+    margin-left: var(--sp-2);
+    font-size: 9px;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 3px;
+    border: 1px solid color-mix(in srgb, var(--danger) 40%, transparent);
+    color: var(--danger);
+    vertical-align: middle;
+}
+
+.pgcr-player-stats {
+    font-size: 11px;
+    color: var(--text-3);
+    margin-top: 1px;
+    font-variant-numeric: tabular-nums;
+}
+
+/* --- Combat stats grid --- */
+.pgcr-stats-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.pgcr-stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+    font-size: 13px;
+}
+
+.pgcr-stat-row span:first-child {
+    color: var(--text-3);
+    font-weight: 500;
+}
+
+.pgcr-stat-row span:last-child {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.pgcr-stats-grid.highlights .pgcr-stat-row span:last-child {
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-2);
+}
+
+/* --- Weapons section --- */
+.pgcr-weapons-section {
+    padding: var(--sp-4) 0 var(--sp-5);
+    border-top: 1px solid var(--border);
+}
+
+.pgcr-weapon-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+    padding: 0 var(--sp-5);
+}
+
+.pgcr-weapon {
+    display: flex;
+    gap: var(--sp-3);
+    padding: var(--sp-3);
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+}
+
+.pgcr-weapon-icon {
+    width: 48px;
+    height: 48px;
+    flex: none;
+    border-radius: var(--r-sm);
+    overflow: hidden;
+    background: var(--bg-3);
+}
+
+.pgcr-weapon-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.pgcr-weapon-placeholder {
+    width: 100%;
+    height: 100%;
+    background: var(--bg-3);
+}
+
+.pgcr-weapon-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.pgcr-weapon-top {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+}
+
+.pgcr-weapon-name {
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.pgcr-weapon-slot {
+    font-size: 9px;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 3px;
+    border: 1px solid;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    flex: none;
+    opacity: 0.8;
+}
+
+.pgcr-weapon-sub {
+    font-size: 11px;
+    color: var(--text-3);
+    margin-top: 2px;
+}
+
+.pgcr-weapon-precision {
+    font-size: 11px;
+    color: var(--text-3);
+    font-weight: 600;
+    margin-top: 1px;
+}
+
+.pgcr-weapon-bar {
+    height: 3px;
+    background: var(--bg-3);
+    border-radius: 2px;
+    margin-top: 4px;
+    overflow: hidden;
+}
+
+.pgcr-weapon-bar-fill {
+    height: 100%;
+    background: var(--ac);
+    border-radius: 2px;
+    transition: width 0.3s var(--ease-out);
+}
+
+/* --- Player detail header --- */
+.pgcr-player-header {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-4);
+    padding: var(--sp-5);
+    border-left: 3px solid;
+    margin: var(--sp-4) var(--sp-5) 0;
+    border-radius: var(--r-md);
+    background: var(--bg-2);
+}
+
+.pgcr-player-header .pgcr-emblem-wrap {
+    border-radius: var(--r-md);
+}
+
+.pgcr-player-header .pgcr-emblem-img {
+    border-radius: var(--r-md);
+}
+
+.pgcr-player-header .pgcr-emblem-fallback {
+    border-radius: var(--r-md);
+    font-size: 22px;
+}
+
+.pgcr-player-header .pgcr-class-badge {
+    width: 20px;
+    height: 20px;
+    bottom: -4px;
+    right: -4px;
+}
+
+.pgcr-player-header-name {
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+.pgcr-player-header-class {
+    font-size: 12px;
+    color: var(--text-3);
+    margin-top: 2px;
+}
+
+/* --- External report site links --- */
+.pgcr-report-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 0 var(--sp-5) var(--sp-4);
+}
+
+.pgcr-report-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    transition: background .15s, border-color .15s, transform .1s;
+}
+
+.pgcr-report-btn:hover {
+    background: var(--bg-3);
+    border-color: var(--ac);
+    transform: scale(1.15);
+}
+
+.pgcr-report-icon {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    object-fit: contain;
+}
+
+/* --- Performance grid --- */
+.pgcr-perf-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: var(--sp-2);
+    padding: 0 var(--sp-5) var(--sp-4);
+}
+
+.pgcr-perf-cell {
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    padding: var(--sp-3);
+    text-align: center;
+}
+
+.pgcr-perf-val {
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
+}
+
+.pgcr-perf-label {
+    font-size: 9px;
+    color: var(--text-3);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-top: 2px;
+}
+
+/* --- Loading / error in PGCR --- */
+.pgcr-loading {
+    text-align: center;
+    padding: 60px var(--sp-5);
+    color: var(--text-3);
+    font-size: 14px;
+}
+
+.pgcr-error-msg {
+    color: var(--danger);
+}
+
+.pgcr-panel {
+    padding-bottom: var(--sp-5);
+}

@@ -1,0 +1,196 @@
+/* ==========================================================================
+   Stat Bar â€” consolidated row of numbers, not individual cards
+   ========================================================================== */
+
+.stat-bar {
+    display: flex;
+    align-items: stretch;
+    background: var(--bg-2);
+    border-radius: var(--r-lg);
+    margin-bottom: var(--sp-4);
+    overflow: hidden;
+}
+
+.stat-cell {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--sp-4) var(--sp-3);
+    position: relative;
+    text-align: center;
+    min-width: 0;
+}
+
+.stat-cell + .stat-cell::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 20%;
+    bottom: 20%;
+    width: 1px;
+    background: var(--border);
+}
+
+.stat-cell--primary {
+    flex: 1.15;
+    background: color-mix(in srgb, var(--text-1) 3%, transparent);
+}
+
+.stat-val {
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    color: var(--text-1);
+}
+
+.stat-val small {
+    font-size: 14px;
+    font-weight: 600;
+    opacity: 0.5;
+}
+
+.stat-cell--primary .stat-val {
+    font-size: 26px;
+}
+
+.stat-key {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--text-3);
+    margin-top: 4px;
+}
+
+.stat-sub {
+    font-size: 11px;
+    color: var(--text-3);
+    margin-top: 2px;
+    font-variant-numeric: tabular-nums;
+}
+
+.stat-sub .ok { color: var(--success); }
+.stat-sub .bad { color: var(--danger); }
+
+.stat-bar--page {
+    margin-bottom: var(--sp-6);
+}
+
+.stat-bar--page .stat-val {
+    font-size: 20px;
+}
+
+.stat-bar--page .stat-cell--primary .stat-val {
+    font-size: 24px;
+}
+
+/* ==========================================================================
+   Most Played
+   ========================================================================== */
+
+.most-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--sp-3);
+}
+
+.most {
+    position: relative;
+    border-radius: var(--r-lg);
+    overflow: hidden;
+    min-height: 130px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    background: var(--bg-2);
+}
+
+.most .bg {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center 30%;
+    opacity: 0.45;
+}
+
+.most .scrim {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, rgba(6, 6, 10, 0.92) 30%, rgba(6, 6, 10, 0.2));
+}
+
+.most .head {
+    position: absolute;
+    top: var(--sp-3);
+    left: var(--sp-4);
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-2);
+}
+
+.most .head .when {
+    color: var(--text-3);
+    font-weight: 500;
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+.most .head .star {
+    font-size: 10px;
+}
+
+.most.raid .head .star { color: #e8c55a; }
+.most.dungeon .head .star { color: #9d8aff; }
+
+.most .body {
+    position: relative;
+    padding: var(--sp-3) var(--sp-4) var(--sp-4);
+}
+
+.most .name {
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+.most .completed {
+    font-size: 12px;
+    margin-top: 3px;
+    color: var(--text-2);
+}
+
+.most .completed b { color: var(--success); }
+.most .completed .muted { color: var(--text-3); }
+
+.most .badge {
+    display: inline-block;
+    margin-top: var(--sp-2);
+    font-size: 11px;
+    font-weight: 600;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid var(--border);
+    padding: 2px 8px;
+    border-radius: var(--r-sm);
+    color: var(--text-2);
+    font-variant-numeric: tabular-nums;
+}
+
+.most .empty {
+    position: relative;
+    padding: var(--sp-5) var(--sp-4);
+    color: var(--text-3);
+    font-size: 13px;
+}
+
+/* Page Summary â€” now uses .stat-bar, old .page-summary removed */

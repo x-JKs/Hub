@@ -26,6 +26,8 @@ export interface ActivityRun {
 }
 
 export interface MostPlayed {
+    /** Stable activity group key — lets the card open that activity's clears. */
+    groupKey: string
     name: string
     splashUrl: string | null
     total: number
@@ -67,12 +69,16 @@ function mostPlayed(runs: ActivityRun[]): MostPlayed | null {
         groups.set(run.groupKey, g)
     }
 
+    let bestKey: string | null = null
     let best = null as null | { name: string; splashUrl: string | null; total: number; completed: number }
-    for (const g of groups.values()) {
-        if (!best || g.total > best.total) best = g
+    for (const [key, g] of groups) {
+        if (!best || g.total > best.total) {
+            best = g
+            bestKey = key
+        }
     }
-    if (!best) return null
-    return { ...best, successPct: pct(best.completed, best.total) }
+    if (!best || bestKey === null) return null
+    return { groupKey: bestKey, ...best, successPct: pct(best.completed, best.total) }
 }
 
 /** Filter to the period window and compute every card's numbers. */

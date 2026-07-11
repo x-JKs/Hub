@@ -1,0 +1,274 @@
+/* ==========================================================================
+   Activity Detail Cards â€” the heart of the UI
+   ========================================================================== */
+
+.detail-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
+}
+
+.detail {
+    border-radius: var(--r-lg);
+    overflow: hidden;
+    background: var(--bg-2);
+    transition: background var(--dur) var(--ease-out);
+}
+
+.detail:hover {
+    background: color-mix(in srgb, var(--bg-2) 85%, var(--bg-3));
+}
+
+/* --- Header / splash image --- */
+.detail-head {
+    position: relative;
+    height: 88px;
+    display: flex;
+    align-items: flex-end;
+    padding: var(--sp-3) var(--sp-5);
+}
+
+.detail-head .bg {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center 28%;
+    opacity: 0.4;
+    transition: opacity 0.4s var(--ease-out);
+}
+
+.detail:hover .detail-head .bg {
+    opacity: 0.55;
+}
+
+.detail-head .scrim {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        180deg,
+        rgba(6, 6, 10, 0.3) 0%,
+        rgba(20, 20, 25, 0.85) 100%
+    );
+}
+
+.detail-title {
+    position: relative;
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.8);
+}
+
+/* --- Badges --- */
+.detail-badges {
+    position: absolute;
+    top: var(--sp-3);
+    right: var(--sp-4);
+    display: flex;
+    gap: var(--sp-1);
+}
+
+.tag {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid var(--border);
+    color: var(--text-2);
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    backdrop-filter: blur(8px);
+}
+
+.tag-flawless {
+    border-color: color-mix(in srgb, #e8c55a 50%, transparent);
+    color: #e8c55a;
+}
+
+.tag-solo,
+.tag-duo,
+.tag-trio {
+    border-color: color-mix(in srgb, var(--success) 40%, transparent);
+    color: var(--success);
+}
+
+.tag-soloflawless,
+.tag-duoflawless,
+.tag-trioflawless {
+    border-color: color-mix(in srgb, #e8c55a 50%, transparent);
+    color: #e8c55a;
+}
+
+.tag-dayone {
+    border-color: color-mix(in srgb, #9d8aff 40%, transparent);
+    color: #9d8aff;
+}
+
+/* Fresh-vs-checkpoint tags shown on a single clear's report */
+.tag-full {
+    border-color: color-mix(in srgb, var(--success) 40%, transparent);
+    color: var(--success);
+}
+
+.tag-checkpoint {
+    border-color: var(--border-hover);
+    color: var(--text-2);
+}
+
+.pgcr-detail-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2);
+    margin-top: var(--sp-3);
+}
+
+/* --- Body grid --- */
+.detail-body {
+    display: grid;
+    grid-template-columns: 1.3fr 1fr 1.2fr 1fr;
+    gap: var(--sp-5);
+    padding: var(--sp-4) var(--sp-5) var(--sp-5);
+}
+
+/* Clears column */
+.detail-clears .big {
+    font-family: var(--font-display);
+    font-size: 36px;
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+}
+
+.detail-clears .caption {
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    color: var(--text-3);
+    font-weight: 600;
+    margin-top: 3px;
+    text-transform: uppercase;
+}
+
+.detail-clears .weekly {
+    font-size: 11px;
+    color: var(--text-3);
+    margin-top: var(--sp-2);
+    font-variant-numeric: tabular-nums;
+}
+
+.detail-clears .weekly b {
+    color: var(--text-2);
+    font-weight: 600;
+}
+
+/* Recent run dots */
+.dots {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    margin-top: var(--sp-2);
+}
+
+.dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--bg-3);
+}
+
+.dot.ok { background: var(--success); opacity: 0.7; }
+.dot.bad { background: var(--danger); opacity: 0.6; }
+
+/* Lowman/flawless clear â€” same green circle as a normal clear, with a gold
+   star marker on top so it still matches the other dots. */
+.dot.star {
+    background: var(--success);
+    opacity: 0.85;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ac);
+    font-size: 6px;
+    line-height: 1;
+    overflow: visible;
+}
+
+/* Stat rows (fastest, time, kd) */
+.detail-mini,
+.detail-kda {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.detail-mini > div,
+.detail-kda > div {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 12px;
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+    padding-bottom: 5px;
+}
+
+.detail-mini .k,
+.detail-kda .k {
+    color: var(--text-3);
+    font-weight: 500;
+}
+
+.detail-mini .v,
+.detail-kda .v {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+}
+
+/* Accent = activity color */
+.accent {
+    color: var(--ac);
+}
+
+/* Version table */
+.detail-versions {
+    font-size: 12px;
+}
+
+.vrow {
+    display: grid;
+    grid-template-columns: 1.4fr 0.8fr 1fr;
+    gap: 4px;
+    padding: 4px 0;
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+}
+
+.vrow span:nth-child(2),
+.vrow span:nth-child(3) {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.vrow.vhead {
+    color: var(--text-3);
+    font-size: 10px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+.vrow:not(.vhead) span:first-child {
+    font-weight: 600;
+    color: var(--text-2);
+}
+
+.vrow:not(.vhead) span:nth-child(2) {
+    font-family: var(--font-display);
+    font-weight: 500;
+}
+
+/* ==========================================================================
+   Footnote
+   ========================================================================== */

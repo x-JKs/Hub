@@ -32,7 +32,18 @@ if (!existsSync(path.join(root, "dist", "index.html"))) {
 }
 
 console.log("Cleaning output…")
-await rm(path.join(root, "release"), { recursive: true, force: true })
+try {
+    await rm(path.join(root, "release"), { recursive: true, force: true })
+} catch (err) {
+    if (err.code === "EBUSY" || err.code === "EPERM") {
+        console.error(
+            "The release folder is locked — Hub.exe is probably still running. " +
+                "Close the app, then build again."
+        )
+        process.exit(1)
+    }
+    throw err
+}
 
 console.log("Copying Electron runtime…")
 await cp(electronDist, outDir, { recursive: true })

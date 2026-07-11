@@ -59,6 +59,8 @@ interface BungieEnvelope<T> {
     ErrorCode: number
     ErrorStatus: string
     Message: string
+    /** Set on throttle errors: how long Bungie wants us to back off. */
+    ThrottleSeconds?: number
 }
 
 function assertKey(): string {
@@ -71,32 +73,92 @@ function assertKey(): string {
     return key
 }
 
-async function request<T>(base: string, path: string, init?: RequestInit): Promise<T> {
-    const res = await fetch(`${base}${path}`, {
-        ...init,
-        headers: {
-            "X-API-Key": assertKey(),
-            ...(init?.body ? { "Content-Type": "application/json" } : {}),
-            ...init?.headers
+// ---------------------------------------------------------------------------
+// Throttle protection. Big accounts fire hundreds of requests on first load
+// (history pages + PGCR verification), so: cap in-flight requests globally,
+// and retry throttle responses honoring Bungie's ThrottleSeconds.
+// ---------------------------------------------------------------------------
+
+const MAX_CONCURRENT = 12
+const MAX_THROTTLE_RETRIES = 3
+// DestinyThrottledByGameServer / ThrottleLimitExceeded(+Minutes/Momentarily/
+// Seconds) / PerApplication(+PerUser)ThrottleExceeded / PerEndpointRequestThrottleExceeded
+const THROTTLE_CODES = new Set([31, 32, 33, 34, 35, 36, 51])
+
+let activeRequests = 0
+const requestQueue: (() => void)[] = []
+
+function acquireSlot(): Promise<void> {
+    return new Promise(resolve => {
+        if (activeRequests < MAX_CONCURRENT) {
+            activeRequests++
+            resolve()
+        } else {
+            requestQueue.push(() => {
+                activeRequests++
+                resolve()
+            })
         }
     })
+}
 
-    let body: BungieEnvelope<T>
-    try {
-        body = await res.json()
-    } catch {
-        throw new BungieError(`Bungie returned a non-JSON response (HTTP ${res.status})`, undefined, res.status)
-    }
+function releaseSlot() {
+    activeRequests--
+    requestQueue.shift()?.()
+}
 
-    // Bungie always returns 200 with an ErrorCode field; 1 means Success.
-    if (body.ErrorCode !== 1) {
-        throw new BungieError(
-            body.Message || `Bungie error ${body.ErrorStatus}`,
-            body.ErrorCode,
-            res.status
-        )
+const sleep = (ms: number) => new Promise<void>(r => setTimeout(r, ms))
+
+async function request<T>(base: string, path: string, init?: RequestInit): Promise<T> {
+    for (let attempt = 0; ; attempt++) {
+        await acquireSlot()
+        let res: Response
+        let body: BungieEnvelope<T> | null
+        try {
+            res = await fetch(`${base}${path}`, {
+                ...init,
+                headers: {
+                    "X-API-Key": assertKey(),
+                    ...(init?.body ? { "Content-Type": "application/json" } : {}),
+                    ...init?.headers
+                }
+            })
+            try {
+                body = await res.json()
+            } catch {
+                body = null
+            }
+        } finally {
+            releaseSlot()
+        }
+
+        const throttled =
+            res.status === 429 ||
+            (body !== null && body.ErrorCode !== 1 && THROTTLE_CODES.has(body.ErrorCode))
+        if (throttled && attempt < MAX_THROTTLE_RETRIES) {
+            const waitMs = Math.max((body?.ThrottleSeconds ?? 0) * 1000, 1000 * (attempt + 1))
+            await sleep(waitMs)
+            continue
+        }
+
+        if (body === null) {
+            throw new BungieError(
+                `Bungie returned a non-JSON response (HTTP ${res.status})`,
+                undefined,
+                res.status
+            )
+        }
+
+        // Bungie always returns 200 with an ErrorCode field; 1 means Success.
+        if (body.ErrorCode !== 1) {
+            throw new BungieError(
+                body.Message || `Bungie error ${body.ErrorStatus}`,
+                body.ErrorCode,
+                res.status
+            )
+        }
+        return body.Response
     }
-    return body.Response
 }
 
 export const bungieGet = <T>(path: string, init?: RequestInit) => request<T>(BASE, path, init)

@@ -81,7 +81,10 @@ export interface AggregateHashStat {
 /** Bungie activity mode enum values we care about. */
 export const ActivityMode = {
     Raid: 4,
-    Dungeon: 82
+    Dungeon: 82,
+    /** Scored nightfalls (all difficulty tiers, incl. Grandmaster). */
+    Nightfall: 46,
+    TrialsOfOsiris: 84
 } as const
 
 /** Full Post Game Carnage Report */

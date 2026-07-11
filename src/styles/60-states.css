@@ -1,0 +1,457 @@
+/* ==========================================================================
+   States (loading, error, empty)
+   ========================================================================== */
+
+.state {
+    text-align: center;
+    padding: 80px var(--sp-5);
+    color: var(--text-3);
+    font-size: 14px;
+}
+
+.state.error {
+    color: var(--danger);
+}
+
+.state-retry {
+    display: block;
+    margin: var(--sp-4) auto 0;
+    padding: 8px 20px;
+    border-radius: var(--r-md);
+    border: 1px solid var(--border);
+    background: var(--bg-2);
+    color: var(--text-1);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background var(--dur) var(--ease-out), border-color var(--dur) var(--ease-out);
+}
+
+.state-retry:hover {
+    background: var(--bg-3);
+    border-color: var(--border-hover);
+}
+
+/* Crash screen (top-level error boundary) */
+.crash {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 32px);
+    padding: var(--sp-6);
+}
+
+.crash-box {
+    max-width: 460px;
+    padding: var(--sp-6);
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: var(--r-xl);
+    text-align: center;
+}
+
+.crash-box h2 {
+    margin: 0 0 var(--sp-2);
+    font-family: var(--font-display);
+    font-size: 20px;
+}
+
+.crash-box p {
+    margin: 0 0 var(--sp-4);
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text-2);
+}
+
+.crash-detail {
+    margin: 0 0 var(--sp-5);
+    padding: var(--sp-3);
+    background: var(--bg-0);
+    border-radius: var(--r-md);
+    font-size: 11px;
+    color: var(--text-3);
+    text-align: left;
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 120px;
+    overflow-y: auto;
+}
+
+.crash-actions {
+    display: flex;
+    gap: var(--sp-3);
+    justify-content: center;
+}
+
+.crash-reload {
+    padding: 9px 22px;
+    border-radius: var(--r-md);
+    border: none;
+    background: var(--text-1);
+    color: var(--bg-0);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.crash-continue {
+    padding: 9px 18px;
+    border-radius: var(--r-md);
+    border: 1px solid var(--border);
+    background: none;
+    color: var(--text-2);
+    font-size: 13px;
+    cursor: pointer;
+}
+
+/* Skeleton shimmer */
+.skeleton-line {
+    height: 14px;
+    border-radius: 4px;
+    background: linear-gradient(
+        90deg,
+        var(--bg-3) 25%,
+        color-mix(in srgb, var(--bg-3) 60%, var(--border)) 50%,
+        var(--bg-3) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.8s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* Loading spinner */
+.spinner {
+    width: 24px;
+    height: 24px;
+    border: 2px solid var(--border);
+    border-top-color: var(--text-2);
+    border-radius: 50%;
+    margin: 0 auto var(--sp-4);
+    animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Loading skeleton for detail cards */
+.detail-skeleton {
+    border-radius: var(--r-lg);
+    overflow: hidden;
+    background: var(--bg-2);
+}
+
+.detail-skeleton .skel-head {
+    height: 88px;
+    background: var(--bg-1);
+    padding: var(--sp-3) var(--sp-5);
+    display: flex;
+    align-items: flex-end;
+}
+
+.detail-skeleton .skel-head .skeleton-line {
+    width: 180px;
+    height: 20px;
+}
+
+.detail-skeleton .skel-body {
+    padding: var(--sp-4) var(--sp-5) var(--sp-5);
+    display: grid;
+    grid-template-columns: 1.3fr 1fr 1.2fr 1fr;
+    gap: var(--sp-5);
+}
+
+.detail-skeleton .skel-col {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+}
+
+.detail-skeleton .skel-col .skeleton-line:first-child {
+    height: 32px;
+    width: 60%;
+}
+
+/* ==========================================================================
+   Current Session (Landing Page)
+   ========================================================================== */
+
+.session {
+    max-width: 480px;
+    margin: 40px auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
+}
+
+.session-card {
+    position: relative;
+    border-radius: var(--r-xl);
+    overflow: hidden;
+    border: 1px solid var(--border);
+    min-height: 140px;
+    background: var(--bg-2);
+}
+
+.session-emblem-bg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.5;
+}
+
+.session-emblem-placeholder {
+    background: var(--bg-1);
+}
+
+.session-card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        180deg,
+        rgba(6, 6, 10, 0.3) 0%,
+        rgba(6, 6, 10, 0.85) 100%
+    );
+    pointer-events: none;
+}
+
+.session-overlay {
+    position: relative;
+    z-index: 1;
+    padding: var(--sp-5) var(--sp-6);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    min-height: 140px;
+}
+
+.session-name {
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.8);
+}
+
+.session-meta {
+    display: flex;
+    gap: var(--sp-3);
+    margin-top: 2px;
+    font-size: 12px;
+    color: var(--text-3);
+}
+
+.session-light {
+    color: var(--ac);
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.session-light::before {
+    content: "\2726 ";
+    font-size: 10px;
+}
+
+.session-status {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    margin-top: var(--sp-3);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-2);
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex: none;
+}
+
+.session-status.online .status-dot {
+    background: var(--success);
+    box-shadow: 0 0 6px var(--success);
+}
+
+.session-status.offline .status-dot {
+    background: var(--text-3);
+}
+
+.session-status.online {
+    color: var(--success);
+}
+
+.session-fireteam {
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    padding: var(--sp-4);
+}
+
+.fireteam-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-3);
+    margin-bottom: var(--sp-3);
+}
+
+.fireteam-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+}
+
+.fireteam-member {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    padding: var(--sp-2) var(--sp-3);
+    background: var(--bg-1);
+    border-radius: var(--r-md);
+}
+
+.fireteam-name {
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.session-view-btn {
+    width: 100%;
+    padding: 12px;
+    border-radius: var(--r-lg);
+    border: 1px solid var(--border);
+    background: var(--bg-2);
+    color: var(--text-1);
+    font-size: 14px;
+    font-weight: 700;
+    font-family: var(--font-display);
+    cursor: pointer;
+    transition: all var(--dur) var(--ease-out);
+    letter-spacing: -0.01em;
+}
+
+.session-view-btn:hover {
+    background: var(--bg-3);
+    border-color: var(--border-hover);
+}
+
+.skeleton-pulse {
+    background: var(--bg-3);
+    animation: shimmer 1.8s ease-in-out infinite;
+    background: linear-gradient(
+        90deg,
+        var(--bg-3) 25%,
+        color-mix(in srgb, var(--bg-3) 60%, var(--border)) 50%,
+        var(--bg-3) 75%
+    );
+    background-size: 200% 100%;
+}
+
+/* ==========================================================================
+   Detail Card â€” clickable state
+   ========================================================================== */
+
+.detail-clickable {
+    cursor: pointer;
+}
+
+.detail-clickable:active {
+    transform: scale(0.995);
+}
+
+.clickable-row {
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background var(--dur) var(--ease-out);
+}
+
+.clickable-row:hover {
+    background: color-mix(in srgb, var(--ac) 10%, transparent);
+}
+
+/* Clickable version fastest time â€” hug just the number, aligned right. */
+.vfast-clickable {
+    justify-self: end;
+    width: fit-content;
+    cursor: pointer;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-underline-offset: 2px;
+    border-radius: 4px;
+    padding: 1px 5px;
+    transition: background var(--dur) var(--ease-out), filter var(--dur) var(--ease-out);
+}
+.vfast-clickable:hover {
+    background: color-mix(in srgb, var(--ac) 16%, transparent);
+    filter: brightness(1.2);
+}
+
+/* Clickable achievement tags */
+.tag-clickable {
+    cursor: pointer;
+    transition: filter var(--dur) var(--ease-out), transform var(--dur) var(--ease-out);
+}
+.tag-clickable:hover {
+    filter: brightness(1.25);
+    transform: translateY(-1px);
+}
+
+/* Clears hover popover (completion % + tracked clears) */
+.big-clears {
+    position: relative;
+    width: fit-content;
+    cursor: default;
+}
+.clears-pop {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    z-index: 20;
+    display: flex;
+    gap: var(--sp-4);
+    padding: var(--sp-2) var(--sp-3);
+    background: var(--bg-1, #0c0c12);
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    transform: translateY(-4px);
+    pointer-events: none;
+    transition: opacity var(--dur) var(--ease-out), transform var(--dur) var(--ease-out);
+    white-space: nowrap;
+}
+.big-clears:hover .clears-pop {
+    opacity: 1;
+    transform: translateY(0);
+}
+.clears-pop-row {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    line-height: 1.2;
+}
+.clears-pop-row b {
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-1);
+    font-variant-numeric: tabular-nums;
+}
+.clears-pop-row span {
+    font-size: 9px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-3);
+    font-weight: 600;
+}

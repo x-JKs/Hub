@@ -58,6 +58,42 @@ export function useCountUp(target: number, duration = 1200, enabled = true): num
     return value
 }
 
+/**
+ * Pointer-tracking parallax: sets --px/--py (-0.5..0.5) on the hovered element.
+ * CSS consumes the vars inside transform() on the artwork layer, so all motion
+ * stays GPU-composited. Spread the returned handlers onto the card element.
+ */
+const leaveTimers = new WeakMap<HTMLElement, number>()
+
+// Longest spotlight/ring fade-out in motion.css — vars re-center only after
+// the light has fully faded, so it dies where the cursor exited instead of
+// flashing through the middle of the card.
+const LIGHT_FADE_MS = 400
+
+export function parallaxHandlers() {
+    return {
+        onMouseMove: (e: React.MouseEvent<HTMLElement>) => {
+            const el = e.currentTarget
+            const pending = leaveTimers.get(el)
+            if (pending !== undefined) {
+                clearTimeout(pending)
+                leaveTimers.delete(el)
+            }
+            const r = el.getBoundingClientRect()
+            el.style.setProperty("--px", ((e.clientX - r.left) / r.width - 0.5).toFixed(3))
+            el.style.setProperty("--py", ((e.clientY - r.top) / r.height - 0.5).toFixed(3))
+        },
+        onMouseLeave: (e: React.MouseEvent<HTMLElement>) => {
+            const el = e.currentTarget
+            leaveTimers.set(el, window.setTimeout(() => {
+                leaveTimers.delete(el)
+                el.style.setProperty("--px", "0")
+                el.style.setProperty("--py", "0")
+            }, LIGHT_FADE_MS))
+        },
+    }
+}
+
 export function useFadeIn(delay = 0): { entered: boolean; style: React.CSSProperties } {
     const [entered, setEntered] = useState(false)
 

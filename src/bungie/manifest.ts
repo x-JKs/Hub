@@ -128,7 +128,29 @@ export interface ActivityInfo {
     image: string | null
 }
 
+// Activity name/banner lookups persist across sessions (definitions are
+// effectively immutable per hash), so history rows label instantly on relaunch.
+const ACTIVITY_INFO_CACHE_KEY = "manifest-activity-info-v1"
 const activityInfoCache = new Map<number, ActivityInfo>()
+
+try {
+    const stored = JSON.parse(localStorage.getItem(ACTIVITY_INFO_CACHE_KEY) ?? "{}")
+    for (const [k, v] of Object.entries(stored)) activityInfoCache.set(Number(k), v as ActivityInfo)
+} catch { /* ignore */ }
+
+let activityInfoFlush: ReturnType<typeof setTimeout> | null = null
+
+function scheduleActivityInfoPersist() {
+    if (activityInfoFlush) return
+    activityInfoFlush = setTimeout(() => {
+        activityInfoFlush = null
+        try {
+            const obj: Record<number, ActivityInfo> = {}
+            for (const [k, v] of activityInfoCache) obj[k] = v
+            localStorage.setItem(ACTIVITY_INFO_CACHE_KEY, JSON.stringify(obj))
+        } catch { /* full */ }
+    }, 1000)
+}
 
 /** Name + banner image for an activity hash (DestinyActivityDefinition). Cached. */
 export async function resolveActivityInfo(hash: number): Promise<ActivityInfo> {
@@ -144,6 +166,7 @@ export async function resolveActivityInfo(hash: number): Promise<ActivityInfo> {
             image: def.pgcrImage ? "https://www.bungie.net" + def.pgcrImage : null,
         }
         activityInfoCache.set(hash, info)
+        scheduleActivityInfoPersist()
         return info
     } catch {
         return { name: null, image: null }

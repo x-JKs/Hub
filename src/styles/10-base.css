@@ -1,0 +1,216 @@
+/* ==========================================================================
+   Design Tokens â€” "Obsidian Arsenal"
+   ========================================================================== */
+
+:root {
+    /* Surfaces â€” near-black with blue undertone, never flat #000 */
+    --bg-0: #06060a;
+    --bg-1: #0c0c11;
+    --bg-2: #141419;
+    --bg-3: #1c1c23;
+
+    /* Borders */
+    --border: #22222c;
+    --border-hover: #33333f;
+
+    /* Text */
+    --text-1: #ededf0;
+    --text-2: #8a8a98;
+    --text-3: #555564;
+
+    /* Semantic */
+    --success: #4ade80;
+    --danger: #f87171;
+    --info: #60a5fa;
+
+    /* Accent */
+    --ac: #e8b84c;
+    --ac-dim: color-mix(in srgb, var(--ac) 15%, transparent);
+    --ac-glow: color-mix(in srgb, var(--ac) 25%, transparent);
+
+    /* Typography */
+    --font-display: "Space Grotesk", system-ui, sans-serif;
+    --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+    /* Spacing (8pt grid) */
+    --sp-1: 4px;
+    --sp-2: 8px;
+    --sp-3: 12px;
+    --sp-4: 16px;
+    --sp-5: 20px;
+    --sp-6: 24px;
+    --sp-8: 32px;
+    --sp-10: 40px;
+    --sp-12: 48px;
+
+    /* Radii */
+    --r-sm: 6px;
+    --r-md: 10px;
+    --r-lg: 14px;
+    --r-xl: 18px;
+
+    /* Transitions */
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --dur: 200ms;
+
+    font-family: var(--font-body);
+    font-feature-settings: "cv01", "cv02", "cv03"; /* Inter alternates */
+    color-scheme: dark;
+}
+
+/* ==========================================================================
+   Auto-update modal (blurs the app on launch when an update is available)
+   ========================================================================== */
+
+.update-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: color-mix(in srgb, var(--bg-0) 55%, transparent);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    animation: update-fade var(--dur) var(--ease-out);
+}
+
+@keyframes update-fade { from { opacity: 0; } to { opacity: 1; } }
+
+.update-modal {
+    width: min(420px, 90vw);
+    padding: var(--sp-6);
+    text-align: center;
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55);
+}
+
+.update-modal-title {
+    margin: 0 0 var(--sp-2);
+    font-family: var(--font-display);
+    font-size: 19px;
+    color: var(--text-1);
+}
+
+.update-modal-text {
+    margin: 0 0 var(--sp-5);
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--text-2);
+}
+
+.update-modal-actions {
+    display: flex;
+    gap: var(--sp-3);
+    justify-content: center;
+}
+
+.update-btn {
+    padding: var(--sp-2) var(--sp-5);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--bg-0);
+    background: var(--ac);
+    border: none;
+    border-radius: var(--r-sm);
+    cursor: pointer;
+    transition: filter var(--dur) var(--ease-out);
+}
+
+.update-btn:hover { filter: brightness(1.1); }
+
+.update-later {
+    padding: var(--sp-2) var(--sp-4);
+    font-size: 13px;
+    color: var(--text-2);
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+    cursor: pointer;
+    transition: color var(--dur) var(--ease-out), border-color var(--dur) var(--ease-out);
+}
+
+.update-later:hover { color: var(--text-1); border-color: var(--border-hover); }
+
+.update-progress {
+    height: 8px;
+    margin-bottom: var(--sp-3);
+    border-radius: 999px;
+    background: var(--bg-0);
+    overflow: hidden;
+}
+
+.update-progress-fill {
+    height: 100%;
+    background: var(--ac);
+    transition: width 0.2s var(--ease-out);
+}
+
+/* ==========================================================================
+   Reset & Base
+   ========================================================================== */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+    height: 100%;
+}
+
+body {
+    margin: 0;
+    background: var(--bg-0);
+    color: var(--text-1);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    line-height: 1.5;
+    height: 100%;
+    overflow: hidden;
+}
+
+/* Global scrollbar â€” thin, themed, auto-hide */
+::-webkit-scrollbar {
+    width: 6px;
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+button { font-family: inherit; }
+
+/* Keyboard focus ring — cool tint, only on :focus-visible so mouse clicks
+   stay clean. The title bar opts out (its buttons are mouse-only chrome). */
+:focus-visible {
+    outline: 2px solid color-mix(in srgb, #aac4f0 55%, transparent);
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+.titlebar-btn:focus-visible {
+    outline: none;
+}
+
+/* ==========================================================================
+   Layout Shell
+   ========================================================================== */
+
+.app {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: var(--sp-6) var(--sp-5) 80px;
+    height: calc(100vh - 32px);
+    overflow-y: auto;
+    overflow-x: hidden;
+}
