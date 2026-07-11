@@ -25,6 +25,7 @@
 
 Hub pulls a Guardian's complete raid, dungeon and Pantheon history straight from Bungie's API and lays it out in a clean desktop dashboard — lifetime clears, fastest *full* clears, flawless / lowman / day-one tags, weapon-level post-game reports, and a live in-game overlay that times your runs and counts your clears without ever leaving the game.
 
+
 ## Download
 
 > **Windows 10/11** Just install and search any Guardian.
@@ -35,6 +36,7 @@ Hub pulls a Guardian's complete raid, dungeon and Pantheon history straight from
 
 **Hub keeps itself up to date** — it checks for new versions on launch and installs them in the background, so you're always on the latest release.
 
+
 ## Getting started
 
 On first launch, open **Settings** to:
@@ -43,6 +45,7 @@ On first launch, open **Settings** to:
 - **Enable the overlay** and choose Raids / Dungeons / both and a weekly or daily reset period.
 
 > **Tip:** run Hub as **Administrator** to unlock the instant, packet-based overlay timer (WinDivert). Without admin it still works, falling back to Bungie's API for timing.
+
 
 ## Build from source
 
@@ -69,13 +72,16 @@ npm run dist   # NSIS installer    -> release/Hub Setup <version>.exe   (run fro
 
 Released builds bake in the maintainer's Bungie key at build time; when building from source you supply your **own** key in `.env` (the file is git-ignored and never committed).
 
+
 ## Stack
 
 - **Electron** + **Vite** + **React** + **TypeScript**
+  
 
 ## Acknowledgements
 
 Inspired by [raid.report](https://raid.report) / [dungeon.report](https://dungeon.report) / threepole in-game overlays. Built on the [Bungie.net API](https://bungie-net.github.io/).
+
 
 ## Disclaimer &amp; license
 
