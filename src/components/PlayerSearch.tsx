@@ -9,6 +9,14 @@ interface Props {
     placeholder?: string
 }
 
+const PLATFORM_LABEL: Record<number, string> = {
+    1: "Xbox",
+    2: "PlayStation",
+    3: "Steam",
+    5: "Stadia",
+    6: "Epic",
+}
+
 function bungieName(card: UserInfoCard) {
     if (card.bungieGlobalDisplayName) {
         const code = card.bungieGlobalDisplayNameCode?.toString().padStart(4, "0")
@@ -136,11 +144,15 @@ export function PlayerSearch({ onSelect, placeholder }: Props) {
                         results.map(card => {
                             const { name, code } = bungieName(card)
                             const icon = bungieAsset(card.iconPath)
+                            // Same name can exist on several accounts/platforms
+                            // (raid.report's "Select player") — label which is which.
+                            const platform = PLATFORM_LABEL[card.membershipType]
                             return (
                                 <button key={card.membershipId} onClick={() => choose(card)}>
                                     {icon && <img src={icon} alt="" />}
                                     <span>{name}</span>
                                     <span className="code">{code}</span>
+                                    {platform && <span className="code search-platform">{platform}</span>}
                                 </button>
                             )
                         })

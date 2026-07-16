@@ -74,7 +74,9 @@ export function useActivities(player: SelectedPlayer | null): LoadState & { refr
         setState({ ...EMPTY, loading: true })
 
         // Pull raid + dungeon history (since `notBefore`) plus the lifetime
-        // aggregate, normalized. Characters are cached across refreshes.
+        // aggregate for THIS membership only. Same-named accounts on other
+        // platforms are separate players (raid.report treats them the same way);
+        // the search dropdown lists them so the user can view each one.
         const fetchData = async (notBefore: Date) => {
             const characters =
                 charsRef.current ??

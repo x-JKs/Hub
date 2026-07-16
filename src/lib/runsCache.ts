@@ -8,7 +8,9 @@ import type { AggregateHashStat } from "../bungie/types"
 
 // Bump when ActivityRun's shape (or normalization rules) change — stale-shaped
 // caches are discarded and rebuilt from a full fetch.
-const VERSION = 1
+// v2: discards caches written by the short-lived multi-account-merged build,
+// whose run lists mixed several accounts' instances into one cache entry.
+const VERSION = 2
 
 type StoredRun = Omit<ActivityRun, "date"> & { date: string }
 

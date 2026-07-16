@@ -67,6 +67,39 @@ export default function App() {
     const stats = useMemo(() => computeStats(runs, period), [runs, period])
     const liveActivity = useLiveActivity(keyPresent ? player : null)
 
+    // Discord Rich Presence mirrors the (stale-gated) live activity state:
+    // in an activity → name + elapsed; online in orbit → "In Orbit"; offline
+    // or presence disabled → cleared. Yute's DiscordPresenceService, ported.
+    useEffect(() => {
+        const send = window.electronWindow?.setDiscordPresence
+        if (!send) return
+        if (localStorage.getItem("discord-presence-enabled") === "false") {
+            send(null)
+            return
+        }
+        if (liveActivity.activityName && liveActivity.isOnline) {
+            send({
+                details: liveActivity.activityName,
+                state: liveActivity.activityModeLabel ?? "Playing Destiny 2",
+                startMs: liveActivity.activityStarted
+                    ? new Date(liveActivity.activityStarted).getTime()
+                    : undefined,
+                imageUrl: liveActivity.activityImageUrl ?? undefined,
+                imageText: liveActivity.activityName,
+            })
+        } else if (liveActivity.isOnline) {
+            send({ details: "In Orbit" })
+        } else {
+            send(null)
+        }
+    }, [
+        liveActivity.activityName,
+        liveActivity.activityStarted,
+        liveActivity.activityModeLabel,
+        liveActivity.activityImageUrl,
+        liveActivity.isOnline,
+    ])
+
     const setGranularity = (g: Granularity) => setPeriod(currentPeriod(g))
     const onKeySaved = () => {
         setKeyVersion(v => v + 1)
@@ -86,6 +119,10 @@ export default function App() {
         if (localStorage.getItem("overlay-enabled") === "true") {
             window.electronWindow?.showOverlay()
         }
+        // Tell the main process how minimize should behave (tray vs taskbar).
+        window.electronWindow?.setMinimizeToTray(
+            localStorage.getItem("minimize-to-tray") !== "false"
+        )
     }, [])
 
     // Auto-load player on startup: OAuth membership first, then defaultPlayer fallback

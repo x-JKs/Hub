@@ -113,13 +113,17 @@ function stop() {
 
 /** Current instance state derived from packet timing. */
 function getState() {
-    if (!available) return { available: false, active: false, startedAt: null, confident: false }
+    if (!available) return { available: false, active: false, startedAt: null, confident: false, lastPacketAt: null }
     const active = lastPacket > 0 && Date.now() - lastPacket <= GAP_MS
     return {
         available: true,
         active,
         startedAt: active ? instanceStarted : null,
         confident: active ? confident : false,
+        // Lets the renderer freeze the display during short (1–10s) packet gaps —
+        // Yute's InstanceDuration returns its last result during those, so the
+        // timer visibly pauses on loading screens instead of running through them.
+        lastPacketAt: lastPacket > 0 ? lastPacket : null,
     }
 }
 

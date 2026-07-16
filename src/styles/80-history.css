@@ -573,6 +573,34 @@
     color: var(--text-2);
 }
 
+/* --- Loadout snapshot ("what was I running?") --- */
+.pgcr-snapshot-section {
+    padding: var(--sp-4) 0;
+    border-top: 1px solid var(--border);
+}
+
+.pgcr-snapshot {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 0 var(--sp-5);
+}
+
+.pgcr-snapshot-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: var(--r-sm);
+    overflow: hidden;
+    background: var(--bg-3);
+    border: 1px solid var(--border);
+}
+
+.pgcr-snapshot-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
 /* --- Weapons section --- */
 .pgcr-weapons-section {
     padding: var(--sp-4) 0 var(--sp-5);

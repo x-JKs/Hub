@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { getApiKey, hasBuiltinApiKey, setApiKey } from "../bungie/client"
 import { getDefaultPlayer, setDefaultPlayer } from "../hooks/useLiveActivity"
 import {
@@ -33,15 +33,25 @@ export function ApiKeySettings({ intro, onSaved, onClose, onLogin }: Props) {
     const [overlayPeriod, setOverlayPeriod] = useState(() => localStorage.getItem("overlay-period") ?? "weekly")
     const [overlayPos, setOverlayPos] = useState(() => localStorage.getItem("overlay-position") ?? "top-left")
     const [overlayOpacity, setOverlayOpacity] = useState(() => localStorage.getItem("overlay-opacity") ?? "1")
+    const [overlayTimer, setOverlayTimer] = useState(() => localStorage.getItem("overlay-show-timer") !== "false")
+    const [presenceOn, setPresenceOn] = useState(() => localStorage.getItem("discord-presence-enabled") !== "false")
+    const [trayOn, setTrayOn] = useState(() => localStorage.getItem("minimize-to-tray") !== "false")
+    const [startupOn, setStartupOn] = useState(false)
+
+    // Reflect the actual Windows login-item state.
+    useEffect(() => {
+        window.electronWindow?.getLaunchOnStartup().then(setStartupOn).catch(() => {})
+    }, [])
 
     // Persist one overlay option and push the full settings object to the
     // overlay window (which also lets the main process reposition it).
-    const pushOverlay = (patch: Partial<{ mode: string; period: string; position: string; opacity: string }>) => {
+    const pushOverlay = (patch: Partial<{ mode: string; period: string; position: string; opacity: string; showTimer: boolean }>) => {
         const next = {
             mode: patch.mode ?? overlayMode,
             period: patch.period ?? overlayPeriod,
             position: patch.position ?? overlayPos,
             opacity: Number(patch.opacity ?? overlayOpacity) || 1,
+            showTimer: patch.showTimer ?? overlayTimer,
         }
         window.electronWindow?.sendOverlaySettings(next)
     }
@@ -192,6 +202,21 @@ export function ApiKeySettings({ intro, onSaved, onClose, onLogin }: Props) {
                     Enable overlay
                 </label>
                 {overlayOn && (
+                    <label className="keypanel-toggle">
+                        <input
+                            type="checkbox"
+                            checked={overlayTimer}
+                            onChange={e => {
+                                const on = e.target.checked
+                                setOverlayTimer(on)
+                                localStorage.setItem("overlay-show-timer", String(on))
+                                pushOverlay({ showTimer: on })
+                            }}
+                        />
+                        Show activity timer
+                    </label>
+                )}
+                {overlayOn && (
                     <div className="keypanel-overlay-opts">
                         <div className="keypanel-row">
                             <select
@@ -256,6 +281,50 @@ export function ApiKeySettings({ intro, onSaved, onClose, onLogin }: Props) {
                         </div>
                     </div>
                 )}
+            </div>
+
+            <div className="keypanel-section">
+                <p className="keypanel-hint">
+                    <strong>App</strong>
+                </p>
+                <label className="keypanel-toggle">
+                    <input
+                        type="checkbox"
+                        checked={presenceOn}
+                        onChange={e => {
+                            const on = e.target.checked
+                            setPresenceOn(on)
+                            localStorage.setItem("discord-presence-enabled", String(on))
+                            if (!on) window.electronWindow?.setDiscordPresence(null)
+                        }}
+                    />
+                    Discord Rich Presence &mdash; show your current activity on Discord
+                </label>
+                <label className="keypanel-toggle">
+                    <input
+                        type="checkbox"
+                        checked={trayOn}
+                        onChange={e => {
+                            const on = e.target.checked
+                            setTrayOn(on)
+                            localStorage.setItem("minimize-to-tray", String(on))
+                            window.electronWindow?.setMinimizeToTray(on)
+                        }}
+                    />
+                    Minimize to system tray
+                </label>
+                <label className="keypanel-toggle">
+                    <input
+                        type="checkbox"
+                        checked={startupOn}
+                        onChange={e => {
+                            const on = e.target.checked
+                            setStartupOn(on)
+                            window.electronWindow?.setLaunchOnStartup(on)
+                        }}
+                    />
+                    Launch Hub when Windows starts
+                </label>
             </div>
 
             <div className="keypanel-row keypanel-actions">

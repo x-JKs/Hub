@@ -1,10 +1,26 @@
 import { useEffect, useState } from "react"
 
 type Status =
-    | { state: "available"; version?: string }
+    | { state: "available"; version?: string; notes?: string | null }
     | { state: "progress"; percent?: number }
     | { state: "ready"; version?: string }
     | { state: "error" }
+
+// GitHub release bodies arrive as HTML (electron-updater converts the markdown).
+// Strip tags to plain lines and keep it short — this is a modal, not a changelog.
+function notesToLines(notes: string): string[] {
+    const text = notes
+        .replace(/<li[^>]*>/gi, "\n• ")
+        .replace(/<br\s*\/?>/gi, "\n")
+        .replace(/<\/(p|div|h[1-6]|ul|ol)>/gi, "\n")
+        .replace(/<[^>]+>/g, "")
+        .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+    return text
+        .split("\n")
+        .map(l => l.trim())
+        .filter(Boolean)
+        .slice(0, 6)
+}
 
 /**
  * On-launch update prompt. When the main process (electron-updater) reports that
@@ -56,6 +72,7 @@ export function UpdateModal() {
             </>
         )
     } else {
+        const noteLines = status.notes ? notesToLines(status.notes) : []
         body = (
             <>
                 <h2 className="update-modal-title">Update available</h2>
@@ -63,6 +80,14 @@ export function UpdateModal() {
                     A new version{status.version ? ` (v${status.version})` : ""} of Hub is available.
                     Update now to get the latest features and fixes.
                 </p>
+                {noteLines.length > 0 && (
+                    <div className="update-modal-notes">
+                        <div className="update-modal-notes-title">What&rsquo;s new</div>
+                        {noteLines.map((l, i) => (
+                            <div key={i} className="update-modal-note">{l}</div>
+                        ))}
+                    </div>
+                )}
                 <div className="update-modal-actions">
                     <button className="update-btn" onClick={() => window.electronWindow?.downloadUpdate()}>
                         Update now

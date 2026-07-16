@@ -44,6 +44,13 @@ contextBridge.exposeInMainWorld("electronWindow", {
     },
     downloadUpdate: () => ipcRenderer.send("update:download"),
     installUpdate: () => ipcRenderer.send("update:install"),
+    // Discord Rich Presence: pass {details, state?, startMs?} or null to clear.
+    setDiscordPresence: (activity) => ipcRenderer.send("discord:presence", activity),
+    // Launch-on-startup toggle (Windows login item).
+    setLaunchOnStartup: (enabled) => ipcRenderer.send("app:launch-on-startup", enabled),
+    getLaunchOnStartup: () => ipcRenderer.invoke("app:get-launch-on-startup"),
+    // Minimize-to-tray behavior toggle.
+    setMinimizeToTray: (enabled) => ipcRenderer.send("app:minimize-to-tray", enabled),
 })
 
 // Renderer error reporting → userData/hub.log (see main.cjs logError).

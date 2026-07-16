@@ -8,6 +8,7 @@ import { formatAvgDuration } from "../stats/format"
 import { dungeonByHash } from "../manifest/dungeons"
 import { AnimatedOverlay } from "../motion/components"
 import { parallaxHandlers } from "../motion/hooks"
+import { findSnapshot, type LoadoutSnapshot } from "../lib/loadoutSnapshots"
 
 // ---------------------------------------------------------------------------
 // Types
@@ -213,6 +214,44 @@ function ClearsList({
     )
 }
 
+// "What was I running?" — the loadout snapshot captured when this activity
+// started (if the app was open at the time). Icons resolve via the manifest.
+function LoadoutSnapshotStrip({ period }: { period: string }) {
+    const [snap, setSnap] = useState<LoadoutSnapshot | null>(null)
+    const [defs, setDefs] = useState<Map<number, ManifestItemDef>>(new Map())
+
+    useEffect(() => {
+        const s = findSnapshot(period)
+        setSnap(s)
+        setDefs(new Map())
+        if (!s) return
+        let cancelled = false
+        resolveItems(s.itemHashes).then(map => { if (!cancelled) setDefs(map) })
+        return () => { cancelled = true }
+    }, [period])
+
+    if (!snap || defs.size === 0) return null
+    const resolved = snap.itemHashes
+        .map(h => defs.get(h))
+        .filter((d): d is ManifestItemDef => !!d && !!d.icon)
+    if (resolved.length === 0) return null
+
+    return (
+        <div className="pgcr-snapshot-section">
+            <div className="pgcr-section-label">
+                Your {snap.characterClass} loadout at start
+            </div>
+            <div className="pgcr-snapshot">
+                {resolved.map((d, i) => (
+                    <div key={i} className="pgcr-snapshot-icon" title={d.name}>
+                        <img src={d.icon!} alt={d.name} />
+                    </div>
+                ))}
+            </div>
+        </div>
+    )
+}
+
 function PgcrDetail({
     pgcr,
     items,
@@ -364,6 +403,8 @@ function PgcrDetail({
                     </div>
                 </div>
             </div>
+
+            <LoadoutSnapshotStrip period={pgcr.period} />
 
             {weaponList.length > 0 && (
                 <div className="pgcr-weapons-section">

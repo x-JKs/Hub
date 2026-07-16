@@ -1,7 +1,7 @@
 {
   "name": "hub",
   "private": true,
-  "version": "1.0.12",
+  "version": "1.0.13",
   "description": "Destiny 2 activity tracker & finder with a live in-game overlay",
   "author": "x-JKs",
   "type": "module",
@@ -51,7 +51,8 @@
       "target": [
         "nsis"
       ],
-      "icon": "build/icon.ico"
+      "icon": "build/icon.ico",
+      "requestedExecutionLevel": "requireAdministrator"
     },
     "nsis": {
       "oneClick": true,

@@ -101,6 +101,31 @@
     color: var(--text-2);
 }
 
+/* "What's new" — release-note lines pulled from the GitHub release body. */
+.update-modal-notes {
+    margin: 0 0 var(--sp-5);
+    padding: var(--sp-3) var(--sp-4);
+    text-align: left;
+    background: var(--bg-1);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+}
+
+.update-modal-notes-title {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-3);
+    margin-bottom: var(--sp-2);
+}
+
+.update-modal-note {
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--text-2);
+}
+
 .update-modal-actions {
     display: flex;
     gap: var(--sp-3);

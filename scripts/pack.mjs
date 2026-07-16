@@ -57,6 +57,10 @@ if (existsSync(iconPath)) {
     console.log("Setting exe icon + metadata…")
     await rcedit(path.join(outDir, exeName), {
         icon: iconPath,
+        // Always run elevated (UAC prompt on launch, like Yute) — the WinDivert
+        // packet timer needs admin, and it's what gives the overlay its instant
+        // activity starts instead of waiting on the Bungie API.
+        "requested-execution-level": "requireAdministrator",
         "version-string": {
             ProductName: "Hub",
             FileDescription: "Hub — Destiny 2 activity tracker",

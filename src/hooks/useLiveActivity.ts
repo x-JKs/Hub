@@ -2,10 +2,11 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import { getCurrentActivity, getLiveProfile, searchPlayers } from "../bungie/api"
 import type { LiveCharacter, LivePartyMember } from "../bungie/api"
 import { bungieAsset } from "../bungie/client"
-import { resolveActivityName, resolveItems } from "../bungie/manifest"
+import { resolveActivityInfo, resolveActivityName, resolveItems } from "../bungie/manifest"
 import type { ManifestItemDef } from "../bungie/types"
-import { raidByHash } from "../manifest/raids"
+import { raidByHash, raidSplashUrl } from "../manifest/raids"
 import { dungeonByHash } from "../manifest/dungeons"
+import { captureSnapshot } from "../lib/loadoutSnapshots"
 import type { SelectedPlayer } from "./useActivities"
 
 export interface LiveMember {
@@ -26,6 +27,10 @@ export interface LiveActivityState {
     emblemBgUrl: string | null
     activityName: string | null
     activityStarted: string | null
+    /** Short mode label for the current activity ("Raid", "Dungeon", …). */
+    activityModeLabel: string | null
+    /** Splash/pgcr artwork URL for the current activity (Discord presence art). */
+    activityImageUrl: string | null
     isOnline: boolean
     fireteam: LiveMember[]
     allCharacters: LiveCharacter[]
@@ -39,6 +44,8 @@ const EMPTY: LiveActivityState = {
     emblemBgUrl: null,
     activityName: null,
     activityStarted: null,
+    activityModeLabel: null,
+    activityImageUrl: null,
     isOnline: false,
     fireteam: [],
     allCharacters: [],
@@ -57,6 +64,36 @@ function quickActivityName(hash: number): string | null {
     return null
 }
 
+/** Curated splash art for the current activity (raids/dungeons), if known. */
+function quickActivityImage(hash: number): string | null {
+    if (!hash || hash === 0) return null
+    const raid = raidByHash(hash)
+    if (raid) return raidSplashUrl(raid.splashSlug)
+    const dungeon = dungeonByHash(hash)
+    if (dungeon) return dungeon.splashUrl
+    return null
+}
+
+// Bungie DestinyActivityModeType → short human label (Yute's FormatModeLabel).
+const MODE_LABELS: Record<number, string> = {
+    2: "Story Mission",
+    3: "Strike",
+    4: "Raid",
+    5: "Crucible",
+    6: "Patrol",
+    10: "Control",
+    12: "Clash",
+    16: "Nightfall",
+    19: "Iron Banner",
+    37: "Survival",
+    40: "Social",
+    46: "Nightfall",
+    48: "Rumble",
+    63: "Gambit",
+    82: "Dungeon",
+    84: "Trials of Osiris",
+}
+
 function isRecentlyOnline(dateStr: string): boolean {
     if (!dateStr) return false
     const diff = Date.now() - new Date(dateStr).getTime()
@@ -68,6 +105,10 @@ export function useLiveActivity(player: SelectedPlayer | null, pollMs = 30_000):
     const timerRef = useRef<ReturnType<typeof setInterval>>()
     const abortRef = useRef(0)
 
+    // Current activity start (owned by the fast poll) — the slow poll pairs it
+    // with the equipment it just fetched to capture a loadout snapshot.
+    const activityStartedRef = useRef<string | null>(null)
+
     const fetch = useCallback(async () => {
         if (!player) { setState(EMPTY); return }
 
@@ -77,7 +118,24 @@ export function useLiveActivity(player: SelectedPlayer | null, pollMs = 30_000):
             if (abortRef.current !== id) return
 
             const most = profile.characters[0] ?? null
-            const online = profile.isOnline || isRecentlyOnline(most?.dateLastPlayed ?? "")
+            // Online = transitory data present (authoritative), with recency
+            // fallbacks for privacy-hidden transitory: a fresh dateLastPlayed or a
+            // freshly-started activity both prove a live session.
+            const online = profile.isOnline
+                || isRecentlyOnline(most?.dateLastPlayed ?? "")
+                || isRecentlyOnline(most?.dateActivityStarted ?? "")
+
+            // Loadout snapshot: what's equipped right now, keyed by the current
+            // activity's start time (Yute's TryCaptureLoadoutSnapshot). Captured
+            // once per activity start; lets PGCRs answer "what was I running?".
+            if (online && activityStartedRef.current && most && most.equippedItems.length > 0) {
+                captureSnapshot({
+                    startedAt: activityStartedRef.current,
+                    membershipId: player.membershipId,
+                    characterClass: most.className,
+                    itemHashes: most.equippedItems,
+                })
+            }
 
             // Resolve fireteam members (the heavy part — kept on the slow poll)
             const fireteam = await resolveFireteam(profile.partyMembers)
@@ -125,24 +183,43 @@ export function useLiveActivity(player: SelectedPlayer | null, pollMs = 30_000):
                 if (cancelled) return
 
                 let activityName: string | null = null
+                let activityImage: string | null = null
                 if (cur && cur.activityHash !== 0 && cur.startDate) {
                     activityName = quickActivityName(cur.activityHash)
+                    activityImage = quickActivityImage(cur.activityHash)
                     if (!activityName) {
-                        const resolved = await resolveActivityName(cur.activityHash)
+                        // Manifest fallback resolves name AND pgcr artwork together.
+                        const info = await resolveActivityInfo(cur.activityHash)
                         if (cancelled) return
-                        if (resolved && !ORBIT_PATTERN.test(resolved)) activityName = resolved
+                        if (info.name && !ORBIT_PATTERN.test(info.name)) {
+                            activityName = info.name
+                            activityImage = info.image
+                        }
                     }
                 }
+                const modeLabel = cur ? MODE_LABELS[cur.modeType] ?? null : null
                 const activityStarted = activityName ? (cur?.startDate ?? null) : null
 
-                setState(s => ({
-                    ...s,
-                    activityName,
-                    activityStarted,
-                    // In an activity ⇒ definitely online; otherwise keep the slow
-                    // poll's online/offline determination.
-                    isOnline: activityName ? true : s.isOnline,
-                }))
+                setState(s => {
+                    // Bungie PERSISTS currentActivityHash + dateActivityStarted
+                    // after logoff (until that character next logs in), so a bare
+                    // hash is NOT proof of a live activity. Show it only when the
+                    // slow poll says the player is online, or the activity started
+                    // recently (a fresh start is itself proof of a live session).
+                    const startedRecently = activityStarted
+                        ? Date.now() - new Date(activityStarted).getTime() < 10 * 60 * 1000
+                        : false
+                    const live = !!activityName && (s.isOnline || startedRecently)
+                    activityStartedRef.current = live ? activityStarted : null
+                    return {
+                        ...s,
+                        activityName: live ? activityName : null,
+                        activityStarted: live ? activityStarted : null,
+                        activityModeLabel: live ? modeLabel : null,
+                        activityImageUrl: live ? activityImage : null,
+                        isOnline: live ? true : s.isOnline,
+                    }
+                })
             } catch { /* non-critical */ }
         }
 

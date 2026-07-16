@@ -1,12 +1,13 @@
 // Electron main process. Creates the window and loads the built Vite app
 // (or the dev server when ELECTRON_DEV is set).
 
-const { app, BrowserWindow, ipcMain, nativeImage, screen, session, shell } = require("electron")
+const { app, BrowserWindow, Menu, Tray, ipcMain, nativeImage, screen, session, shell } = require("electron")
 const { execSync, spawn } = require("child_process")
 const fs = require("fs")
 const http = require("http")
 const path = require("path")
 const packetTimer = require("./packetTimer.cjs")
+const discordPresence = require("./discordPresence.cjs")
 
 const isDev = !!process.env.ELECTRON_DEV
 const PROTOCOL = "destiny-tracker"
@@ -65,7 +66,9 @@ function initAutoUpdate() {
 
     autoUpdater.on("update-available", i => {
         console.log("[updater] update available:", i?.version)
-        notify({ state: "available", version: i?.version })
+        // releaseNotes: the GitHub release body (string), when one was written.
+        const notes = typeof i?.releaseNotes === "string" ? i.releaseNotes : null
+        notify({ state: "available", version: i?.version, notes })
     })
     autoUpdater.on("download-progress", p =>
         notify({ state: "progress", percent: Math.round(p?.percent ?? 0) })
@@ -335,8 +338,16 @@ function createWindow() {
     })
 }
 
-// Window control IPC
-ipcMain.on("win:minimize", () => mainWindow?.minimize())
+// Window control IPC. Minimize sends the window to the system tray when the
+// "minimize to tray" setting is on (pushed from the renderer); the X genuinely
+// closes and quits the app.
+let minimizeToTray = false
+ipcMain.on("app:minimize-to-tray", (_event, enabled) => { minimizeToTray = !!enabled })
+
+ipcMain.on("win:minimize", () => {
+    if (minimizeToTray && tray && mainWindow && !mainWindow.isDestroyed()) mainWindow.hide()
+    else mainWindow?.minimize()
+})
 ipcMain.on("win:maximize", () => {
     if (mainWindow?.isMaximized()) mainWindow.unmaximize()
     else mainWindow?.maximize()
@@ -348,8 +359,65 @@ ipcMain.on("win:set-icon", (_event, dataUrl) => {
     if (!mainWindow || mainWindow.isDestroyed()) return
     try {
         const img = nativeImage.createFromDataURL(dataUrl)
-        if (!img.isEmpty()) mainWindow.setIcon(img)
+        if (!img.isEmpty()) {
+            mainWindow.setIcon(img)
+            ensureTray(img)
+        }
     } catch { /* non-critical */ }
+})
+
+// ---------------------------------------------------------------------------
+// System tray — created when the renderer supplies the app icon (works in both
+// dev and the packaged build, which stages no separate icon file).
+// ---------------------------------------------------------------------------
+
+let tray = null
+
+function showMainWindow() {
+    if (!mainWindow || mainWindow.isDestroyed()) return
+    mainWindow.show()
+    if (mainWindow.isMinimized()) mainWindow.restore()
+    mainWindow.focus()
+}
+
+function ensureTray(icon) {
+    try {
+        const img = icon.resize({ width: 16, height: 16 })
+        if (tray) {
+            tray.setImage(img)
+            return
+        }
+        tray = new Tray(img)
+        tray.setToolTip("Hub — Destiny 2 tracker")
+        tray.setContextMenu(Menu.buildFromTemplate([
+            { label: "Show Hub", click: showMainWindow },
+            { type: "separator" },
+            { label: "Quit Hub", click: () => app.quit() },
+        ]))
+        tray.on("click", showMainWindow)
+        tray.on("double-click", showMainWindow)
+    } catch (err) {
+        console.warn("[tray] failed:", err?.message ?? err)
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Discord Rich Presence + launch-on-startup IPC
+// ---------------------------------------------------------------------------
+
+ipcMain.on("discord:presence", (_event, activity) => {
+    try { discordPresence.setActivity(activity ?? null) }
+    catch (err) { console.warn("[discord] presence failed:", err?.message ?? err) }
+})
+
+ipcMain.on("app:launch-on-startup", (_event, enabled) => {
+    try {
+        app.setLoginItemSettings({ openAtLogin: !!enabled })
+    } catch (err) { console.warn("[startup] set failed:", err?.message ?? err) }
+})
+ipcMain.handle("app:get-launch-on-startup", () => {
+    try { return app.getLoginItemSettings().openAtLogin }
+    catch { return false }
 })
 
 // ---------------------------------------------------------------------------
@@ -561,21 +629,44 @@ ipcMain.on("overlay:unsurface", () => {
     applyOverlayVisibility()
 })
 
+// Single instance — a second launch (e.g. double-clicking Hub.exe while it's
+// minimized to the tray) focuses the running app instead of starting another
+// process (which would fight over the OAuth bridge port and the overlay).
+const gotInstanceLock = app.requestSingleInstanceLock()
+if (!gotInstanceLock) {
+    app.quit()
+} else {
+    app.on("second-instance", showMainWindow)
+}
+
 app.whenReady().then(() => {
+    if (!gotInstanceLock) return
     registerProtocol()
     stripBungieOrigin()
     startBridgeServer()
     createWindow()
     initAutoUpdate()
+    // Tray appears immediately with the exe's icon (rcedit-stamped); the
+    // renderer swaps in the crisp logo via win:set-icon shortly after.
+    app.getFileIcon(process.execPath)
+        .then(img => { if (img && !img.isEmpty()) ensureTray(img) })
+        .catch(() => { /* tray stays absent — minimize falls back to taskbar */ })
     app.on("activate", () => {
         if (BrowserWindow.getAllWindows().length === 0) createWindow()
     })
 })
 
-app.on("before-quit", () => { stopForegroundWatch(); stopPacketTimer() })
+app.on("before-quit", () => {
+    stopForegroundWatch()
+    stopPacketTimer()
+    discordPresence.stop()
+    try { tray?.destroy() } catch { /* ignore */ }
+    tray = null
+})
 
 app.on("window-all-closed", () => {
     stopForegroundWatch()
     stopPacketTimer()
+    discordPresence.stop()
     if (process.platform !== "darwin") app.quit()
 })

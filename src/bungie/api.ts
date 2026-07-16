@@ -32,11 +32,63 @@ export async function searchPlayers(query: string): Promise<UserInfoCard[]> {
         const name = trimmed.slice(0, hashIndex)
         const code = Number(trimmed.slice(hashIndex + 1))
         if (Number.isInteger(code)) {
-            const cards = await bungiePost<UserInfoCard[]>(
-                "/Destiny2/SearchDestinyPlayerByBungieName/-1/",
-                { displayName: name, displayNameCode: code }
-            )
-            return dedupe(cards.map(c => primaryMembership(c)))
+            // Query BOTH endpoints: the exact-name Destiny search can miss whole
+            // accounts (a legacy platform profile can own the name pair while the
+            // player's real Epic/Steam account only surfaces elsewhere — see
+            // KNOWN_ACCOUNT_LINKS). Then expand every hit through its linked
+            // memberships and list each platform as its OWN row, like
+            // raid.report's "Select player" picker — they are separate accounts
+            // with separate stats.
+            const [exactRes, prefixRes] = await Promise.allSettled([
+                bungiePost<UserInfoCard[]>(
+                    "/Destiny2/SearchDestinyPlayerByBungieName/-1/",
+                    { displayName: name, displayNameCode: code }
+                ),
+                bungiePost<{
+                    searchResults: {
+                        bungieGlobalDisplayName: string
+                        bungieGlobalDisplayNameCode: number
+                        destinyMemberships: UserInfoCard[]
+                    }[]
+                }>("/User/Search/GlobalName/0/", { displayNamePrefix: name }),
+            ])
+
+            const pool: UserInfoCard[] = []
+            if (exactRes.status === "fulfilled") pool.push(...(exactRes.value ?? []))
+            if (prefixRes.status === "fulfilled") {
+                for (const r of prefixRes.value.searchResults ?? []) {
+                    if (
+                        r.bungieGlobalDisplayName?.toLowerCase() === name.toLowerCase() &&
+                        r.bungieGlobalDisplayNameCode === code
+                    ) {
+                        pool.push(...(r.destinyMemberships ?? []))
+                    }
+                }
+            }
+            if (pool.length > 0) {
+                const byId = new Map<string, UserInfoCard>()
+                for (const c of dedupe(pool)) byId.set(c.membershipId, c)
+                const expansions = await Promise.allSettled(
+                    [...byId.values()].map(c => getLinkedMemberships(c.membershipType, c.membershipId))
+                )
+                for (const r of expansions) {
+                    if (r.status !== "fulfilled") continue
+                    for (const m of r.value) {
+                        if (!byId.has(m.membershipId)) {
+                            byId.set(m.membershipId, {
+                                membershipId: m.membershipId,
+                                membershipType: m.membershipType,
+                                displayName: name,
+                                bungieGlobalDisplayName: name,
+                                bungieGlobalDisplayNameCode: code,
+                                crossSaveOverride: 0,
+                                applicableMembershipTypes: [m.membershipType],
+                            })
+                        }
+                    }
+                }
+                return [...byId.values()]
+            }
         }
     }
 
@@ -92,6 +144,146 @@ function primaryMembership(card: UserInfoCard | UserInfoCard[]): UserInfoCard {
         cards.find(c => c.crossSaveOverride === 0 || c.crossSaveOverride === c.membershipType) ??
         cards[0]
     )
+}
+
+// ---------------------------------------------------------------------------
+// Linked memberships — split-platform accounts (Yute-style aggregation)
+// ---------------------------------------------------------------------------
+
+export interface DestinyMembershipRef {
+    membershipType: number
+    membershipId: string
+}
+
+const linkedCache = new Map<string, DestinyMembershipRef[]>()
+
+// Known same-player bridges that Bungie's data CANNOT express: the dev's Xbox
+// profile lives on a separate Bungie.net account that happens to carry the same
+// dump#4706 name, and Bungie's search index only knows the Xbox one — so no
+// name lookup can discover the real (Epic+Steam) account from it. Yute solves
+// this with a hardcoded membership id; this is the same escape hatch. Seeds are
+// expanded through GetMembershipsById like any other membership.
+const KNOWN_ACCOUNT_LINKS: Record<string, DestinyMembershipRef[]> = {
+    // Xbox-only account → the real Epic+Steam account
+    "4611686018556262084": [{ membershipType: 6, membershipId: "4611686018557225333" }],
+    // and the reverse, so either entry point unions the full set
+    "4611686018557225333": [{ membershipType: 1, membershipId: "4611686018556262084" }],
+    "4611686018557199320": [{ membershipType: 1, membershipId: "4611686018556262084" }],
+}
+
+/**
+ * Every Destiny membership belonging to the same player. Two layers:
+ *
+ * 1. GetMembershipsById — platforms linked to the same Bungie account. A split
+ *    account WITHOUT cross-save keeps separate stats per platform, so a
+ *    single-membership view can wildly undercount (Yute merges these too).
+ * 2. Same-name expansion — a player can ALSO own a legacy platform profile on a
+ *    separate Bungie account carrying the same name#code (e.g. an old Xbox
+ *    profile). The exact-name and global-name searches surface those; every
+ *    membership with the identical name#code is unioned in.
+ *
+ * The requested membership comes first; on failure this degrades gracefully
+ * (worst case: just the requested membership).
+ */
+export async function getLinkedMemberships(
+    membershipType: number,
+    membershipId: string
+): Promise<DestinyMembershipRef[]> {
+    const cached = linkedCache.get(membershipId)
+    if (cached) return cached
+
+    const found = new Map<string, DestinyMembershipRef>()
+    const add = (t: number | undefined, id: string | undefined) => {
+        if (t != null && id) found.set(id, { membershipType: t, membershipId: id })
+    }
+    add(membershipType, membershipId)
+
+    let name: string | null = null
+    let code: number | null = null
+    // The requested membership plus any known-bridge seeds, each expanded
+    // through GetMembershipsById to pull in their whole Bungie account.
+    const roots: DestinyMembershipRef[] = [
+        { membershipType, membershipId },
+        ...(KNOWN_ACCOUNT_LINKS[membershipId] ?? []),
+    ]
+    for (const root of roots) {
+        try {
+            const res = await bungieGet<{
+                destinyMemberships?: Array<{
+                    membershipType: number
+                    membershipId: string
+                    bungieGlobalDisplayName?: string
+                    bungieGlobalDisplayNameCode?: number
+                }>
+            }>(`/User/GetMembershipsById/${root.membershipId}/${root.membershipType}/`)
+            for (const m of res.destinyMemberships ?? []) {
+                add(m.membershipType, m.membershipId)
+                if (!name && m.bungieGlobalDisplayName && m.bungieGlobalDisplayNameCode != null) {
+                    name = m.bungieGlobalDisplayName
+                    code = m.bungieGlobalDisplayNameCode
+                }
+            }
+        } catch { /* fall through with what we have */ }
+    }
+
+    if (name && code != null) {
+        const [exactRes, prefixRes] = await Promise.allSettled([
+            bungiePost<UserInfoCard[]>(
+                "/Destiny2/SearchDestinyPlayerByBungieName/-1/",
+                { displayName: name, displayNameCode: code }
+            ),
+            bungiePost<{
+                searchResults: {
+                    bungieGlobalDisplayName: string
+                    bungieGlobalDisplayNameCode: number
+                    destinyMemberships: UserInfoCard[]
+                }[]
+            }>("/User/Search/GlobalName/0/", { displayNamePrefix: name }),
+        ])
+        if (exactRes.status === "fulfilled") {
+            for (const c of exactRes.value ?? []) add(c.membershipType, c.membershipId)
+        }
+        if (prefixRes.status === "fulfilled") {
+            for (const r of prefixRes.value.searchResults ?? []) {
+                if (
+                    r.bungieGlobalDisplayName?.toLowerCase() === name.toLowerCase() &&
+                    r.bungieGlobalDisplayNameCode === code
+                ) {
+                    for (const c of r.destinyMemberships ?? []) add(c.membershipType, c.membershipId)
+                }
+            }
+        }
+    }
+
+    const self = found.get(membershipId)!
+    const list = [self, ...[...found.values()].filter(m => m.membershipId !== membershipId)]
+    linkedCache.set(membershipId, list)
+    return list
+}
+
+/** Merge per-platform aggregate stats: totals sum, fastest takes the minimum. */
+export function mergeAggregates(lists: AggregateHashStat[][]): AggregateHashStat[] {
+    const byHash = new Map<number, AggregateHashStat>()
+    for (const list of lists) {
+        for (const a of list) {
+            const cur = byHash.get(a.hash)
+            if (!cur) {
+                byHash.set(a.hash, { ...a })
+                continue
+            }
+            cur.clears += a.clears
+            cur.kills += a.kills
+            cur.deaths += a.deaths
+            cur.assists += a.assists
+            cur.timeSeconds += a.timeSeconds
+            if (a.fastestSeconds !== null) {
+                cur.fastestSeconds = cur.fastestSeconds === null
+                    ? a.fastestSeconds
+                    : Math.min(cur.fastestSeconds, a.fastestSeconds)
+            }
+        }
+    }
+    return [...byHash.values()]
 }
 
 // ---------------------------------------------------------------------------
@@ -189,8 +381,13 @@ export async function getLiveProfile(
         equippedItems: (equipment[c.characterId]?.items ?? []).map(i => i.itemHash),
     }))
 
-    const most = characters[0]
-    const isOnline = transitory != null || (most?.currentActivityHash ?? 0) !== 0
+    // Online = transitory data present. Bungie only returns component 1000 while
+    // the player is actually in a session; currentActivityHash is NOT a valid
+    // online signal — it persists with its dateActivityStarted after logoff until
+    // that character next logs in (which made finished activities show for hours).
+    // The hook layers a dateLastPlayed-recency fallback on top for players whose
+    // privacy settings hide transitory data.
+    const isOnline = transitory != null
 
     const ui = res.profile?.data?.userInfo
     const globalName = ui?.bungieGlobalDisplayName && ui.bungieGlobalDisplayNameCode != null

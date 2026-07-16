@@ -24,6 +24,8 @@ interface OvSettings {
     period: OvPeriod
     position: OvPosition
     opacity: number
+    /** Yute's Overlay_ShowTimer — hides just the timer chip, clears stay. */
+    showTimer: boolean
 }
 
 interface Notif {
@@ -50,16 +52,19 @@ function readSettings(): OvSettings {
         period: (localStorage.getItem("overlay-period") ?? "weekly") as OvPeriod,
         position: (localStorage.getItem("overlay-position") ?? "top-left") as OvPosition,
         opacity: Number(localStorage.getItem("overlay-opacity") ?? "1") || 1,
+        showTimer: localStorage.getItem("overlay-show-timer") !== "false",
     }
 }
 
+// Yute's timer look: zero-padded MM:SS ("00:00" when idle); hours prefix only
+// past the hour mark (Yute's own display wraps there — ours keeps counting).
 function formatTimer(ms: number): string {
     const sec = Math.max(0, Math.floor(ms / 1000))
     const h = Math.floor(sec / 3600)
     const m = Math.floor((sec % 3600) / 60)
     const s = sec % 60
     const pad = (n: number) => String(n).padStart(2, "0")
-    return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`
+    return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`
 }
 
 
@@ -72,8 +77,8 @@ const CLEARS_POLL = 5 * 60_000   // clear-count refresh
 
 export function Overlay() {
     const [actStart, setActStart] = useState<string | null>(null)
-    const [packet, setPacket] = useState<{ available: boolean; active: boolean; startedAt: number | null; confident: boolean }>(
-        { available: false, active: false, startedAt: null, confident: false }
+    const [packet, setPacket] = useState<{ available: boolean; active: boolean; startedAt: number | null; confident: boolean; lastPacketAt?: number | null }>(
+        { available: false, active: false, startedAt: null, confident: false, lastPacketAt: null }
     )
     const [elapsed, setElapsed] = useState(0)
     const [raidClears, setRaidClears] = useState(0)
@@ -88,7 +93,6 @@ export function Overlay() {
 
     const tickRef = useRef<ReturnType<typeof setInterval>>()
     const settingsRef = useRef(settings)
-    const charIdsRef = useRef<string[] | null>(null)
     const nameCacheRef = useRef<Map<number, string | null>>(new Map())
     const lastCompletedIdRef = useRef<string | null>(null)
     const doneInitialRef = useRef(false)
@@ -106,6 +110,7 @@ export function Overlay() {
                 period: (s.period as OvPeriod) ?? "weekly",
                 position: (s.position as OvPosition) ?? "top-left",
                 opacity: typeof s.opacity === "number" && s.opacity > 0 ? s.opacity : 1,
+                showTimer: s.showTimer ?? true,
             })
         })
         return () => { unsub?.() }
@@ -155,27 +160,42 @@ export function Overlay() {
 
     // API caught up → swap to its authoritative start, once per start, and only if
     // it isn't stale (older than our latest recorded activity = a previous one).
+    // NOT gated on the packet capture — if the capture misses the game's traffic
+    // the API alone must still be able to start the timer (like Yute).
     const apiStart = actStart ? new Date(actStart).getTime() : null
     useEffect(() => {
-        if (apiStart == null) return
-        const inInstanceNow = packet.available ? packet.active : true
-        if (!inInstanceNow || apiStart < savedMs) return
+        if (apiStart == null || apiStart < savedMs) return
         if (usedApiStartsRef.current.has(apiStart)) return
         usedApiStartsRef.current.add(apiStart)
         setInstanceStart(apiStart)
-    }, [apiStart, savedMs, packet.available, packet.active])
+    }, [apiStart, savedMs])
 
-    // Count from instanceStart, but only while actually in an instance: with packet
-    // capture that's "a packet in the last 10s"; without it (non-admin) we rely on
-    // the API reporting a current activity.
-    const inInstance = packet.available ? packet.active : apiStart != null
+    // In an instance when EITHER source says so: live packets, or a fresh API
+    // current-activity. The savedMs staleness floor (Yute's savedTime guard) keeps
+    // a PERSISTED post-logoff activity from counting — Bungie leaves the last
+    // activity's hash + start on the character until it next logs in, so a bare
+    // API activity older than our newest recorded completion is a ghost.
+    const apiLive = apiStart != null && apiStart >= savedMs
+    const inInstance = packet.active || apiLive
     const startMs = inInstance ? instanceStart : null
 
-    // Timer tick — counts up from the activity start.
+    // Timer tick — counts up from the activity start. During a short packet gap
+    // (1–10s: loading screens, brief hitches) the display FREEZES at its last
+    // value instead of running through it — Yute's InstanceDuration returns its
+    // cached result there. A >10s gap ends the instance (packet.active false).
+    const packetRef = useRef(packet)
+    useEffect(() => { packetRef.current = packet }, [packet])
     useEffect(() => {
         if (startMs == null) { setElapsed(0); return }
-        setElapsed(Date.now() - startMs)
-        tickRef.current = setInterval(() => setElapsed(Date.now() - startMs), 1000)
+        const tick = () => {
+            const p = packetRef.current
+            const stalled = p.available && p.active && p.lastPacketAt != null
+                && Date.now() - p.lastPacketAt > 2_000
+            if (stalled) return // hold the last shown value
+            setElapsed(Date.now() - startMs)
+        }
+        tick()
+        tickRef.current = setInterval(tick, 1000)
         return () => clearInterval(tickRef.current)
     }, [startMs])
 
@@ -210,6 +230,7 @@ export function Overlay() {
         return null
     }, [])
 
+    const charIdsRef = useRef<string[] | null>(null)
     const charIds = useCallback(async (mType: number, mId: string): Promise<string[]> => {
         if (charIdsRef.current) return charIdsRef.current
         const c = await getCharacters(mType, mId)
@@ -382,7 +403,10 @@ export function Overlay() {
     return (
         <div style={wrapStyle}>
             <div className={`ov${ready && shown ? " ov--in" : ""}`}>
-                {startMs != null && <span className="ov-timer">{formatTimer(elapsed)}</span>}
+                {/* Always visible (when enabled), like Yute's timer chip — "00:00" while idle. */}
+                {settings.showTimer && (
+                    <span className="ov-timer">{formatTimer(startMs != null ? elapsed : 0)}</span>
+                )}
                 <div className="ov-clears">
                     <span className="ov-dot" />
                     <span className="ov-count">{count}</span>
